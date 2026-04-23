@@ -40,7 +40,24 @@ export function MapCard() {
 
     mapRef.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
+    const geolocate = new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true
+      },
+      trackUserLocation: true,
+      showUserLocation: true,
+      showAccuracyCircle: true
+    });
+
+    mapRef.current.addControl(geolocate, "top-right");
+
+    // Auto-trigger geolocation after a 3s delay
+    const timer = setTimeout(() => {
+      geolocate.trigger();
+    }, 3000);
+
     return () => {
+      clearTimeout(timer);
       mapRef.current?.remove();
     };
   }, []);

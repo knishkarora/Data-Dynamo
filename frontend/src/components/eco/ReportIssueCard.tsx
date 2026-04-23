@@ -1,6 +1,6 @@
 import { GlassCard } from "./GlassCard";
 import { ChevronDown, MapPin, ShieldCheck, Upload, Loader2, CheckCircle2, Lock } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth, SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,45 @@ export function ReportIssueCard() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(categories[0].id);
   const [location, setLocation] = useState({ lat: 30.901, lng: 75.8573 }); // Default Ludhiana
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationLabel, setLocationLabel] = useState("Ludhiana, Punjab (Default)");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Immediate high-accuracy fetch
+    const fetchLocation = () => {
+      if ("geolocation" in navigator) {
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setLocation({ lat: latitude, lng: longitude });
+            setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)} (Live)`);
+            setIsLocating(false);
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+            setIsLocating(false);
+            if (locationLabel.includes("Default")) {
+              setLocationLabel("Ludhiana, Punjab (Signal Weak)");
+            }
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      }
+    };
+
+    // Initial fetch after 2 seconds
+    const initialTimer = setTimeout(fetchLocation, 2000);
+    
+    // Recurring update every 20 seconds to keep it "Live"
+    const interval = setInterval(fetchLocation, 20000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
+  }, []);
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -87,6 +125,16 @@ export function ReportIssueCard() {
       return toast.error("Please sign in first");
     }
 
+    if (isLocating) {
+      console.warn("Submission blocked: Location fetch in progress");
+      return toast.error("Please wait while we pinpoint your location...");
+    }
+
+    if (locationLabel.includes("Default")) {
+      console.warn("Submission blocked: GPS coordinates not verified");
+      return toast.error("Precision GPS coordinates required for civic reporting.");
+    }
+
     if (!file) {
       console.warn("Submission blocked: No file selected");
       return toast.error("Please upload an image");
@@ -104,7 +152,7 @@ export function ReportIssueCard() {
     formData.append("latitude", location.lat.toString());
     formData.append("longitude", location.lng.toString());
 
-    console.log("Form data prepared, starting mutation...");
+    console.log("Form data prepared, starting mutation with live coordinates:", location);
     mutation.mutate(formData);
   };
 
@@ -177,9 +225,20 @@ export function ReportIssueCard() {
 
         <div className="mt-3 flex flex-col gap-2 rounded-2xl bg-white/[0.025] px-3 py-2.5 ring-1 ring-white/5">
           <div className="flex items-center gap-2">
-            <MapPin className="h-3.5 w-3.5 text-teal" strokeWidth={1.8} />
-            <span className="flex-1 text-xs text-foreground">Ludhiana, Punjab (Detected)</span>
-            <span className="rounded-full bg-good/15 px-2 py-0.5 text-[10px] text-good ring-1 ring-good/20">GPS</span>
+            {isLocating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-teal" />
+            ) : (
+              <MapPin className="h-3.5 w-3.5 text-teal" strokeWidth={1.8} />
+            )}
+            <span className="flex-1 text-xs text-foreground truncate">
+              {isLocating ? "Detecting high-accuracy location..." : locationLabel}
+            </span>
+            <span className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] ring-1 transition-colors",
+              isLocating ? "bg-teal/10 text-teal ring-teal/20" : "bg-good/15 text-good ring-good/20"
+            )}>
+              GPS
+            </span>
           </div>
         </div>
 

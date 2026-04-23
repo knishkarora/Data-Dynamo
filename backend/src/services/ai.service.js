@@ -21,7 +21,7 @@ const summarizeDescription = async (description) => {
           content: description
         }
       ],
-      model: 'llama3-8b-8192',
+      model: 'llama-3.3-70b-versatile',
     });
 
     return chatCompletion.choices[0]?.message?.content || description;
@@ -65,7 +65,39 @@ const generateEmbedding = async (text) => {
   }
 };
 
+/**
+ * Chat with the EcoLens AI
+ */
+const chatWithAI = async (message, history = []) => {
+  try {
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are EcoLens AI, a helpful assistant for the environmental and civic reporting platform in Punjab. You provide data-driven insights about air quality, stubble burning, and community reports. Keep your answers concise, professional, and helpful.'
+      },
+      ...history,
+      { role: 'user', content: message }
+    ];
+
+    console.log('EcoLens AI: Sending request to Groq with model llama3-8b-8192');
+    const chatCompletion = await groq.chat.completions.create({
+      messages,
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.7,
+      max_tokens: 512,
+    });
+    console.log('EcoLens AI: Received response from Groq');
+
+    return chatCompletion.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
+  } catch (error) {
+    console.error('GROQ SDK ERROR:', error);
+    logger.error(`Groq Chat Error: ${error.message}`);
+    throw new Error(`AI assistant error: ${error.message}`);
+  }
+};
+
 module.exports = {
   summarizeDescription,
-  generateEmbedding
+  generateEmbedding,
+  chatWithAI
 };

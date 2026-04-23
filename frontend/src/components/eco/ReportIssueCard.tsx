@@ -29,34 +29,54 @@ export function ReportIssueCard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Immediate high-accuracy fetch
-    const fetchLocation = () => {
-      if ("geolocation" in navigator) {
-        setIsLocating(true);
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            setLocation({ lat: latitude, lng: longitude });
-            setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)} (Live)`);
-            setIsLocating(false);
-          },
-          (error) => {
-            console.error("Geolocation error:", error);
-            setIsLocating(false);
-            if (locationLabel.includes("Default")) {
-              setLocationLabel("Ludhiana, Punjab (Signal Weak)");
-            }
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-        );
-      }
+    let failCount = 0;
+
+    const fetchLocation = (highAccuracy = true) => {
+      if (!("geolocation" in navigator)) return;
+      
+      setIsLocating(true);
+      console.log(`Fetching location (High Accuracy: ${highAccuracy})...`);
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocation({ lat: latitude, lng: longitude });
+          setLocationLabel(`${latitude.toFixed(5)}, ${longitude.toFixed(5)} (${highAccuracy ? 'GPS' : 'Approx'})`);
+          setIsLocating(false);
+          failCount = 0;
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          
+          if (highAccuracy && (error.code === 3 || error.code === 1)) {
+            // Timeout or permission issue with high accuracy, try lower accuracy
+            console.log("Retrying with lower accuracy...");
+            fetchLocation(false);
+            return;
+          }
+
+          setIsLocating(false);
+          failCount++;
+          
+          if (locationLabel.includes("Default")) {
+            setLocationLabel("Punjab Region (Signal Weak)");
+          }
+
+          if (failCount > 3) {
+            console.warn("Too many location failures, stopping auto-updates");
+            clearInterval(interval);
+          }
+        },
+        { 
+          enableHighAccuracy: highAccuracy, 
+          timeout: highAccuracy ? 15000 : 10000, 
+          maximumAge: highAccuracy ? 0 : 30000 
+        }
+      );
     };
 
-    // Initial fetch after 2 seconds
-    const initialTimer = setTimeout(fetchLocation, 2000);
-    
-    // Recurring update every 20 seconds to keep it "Live"
-    const interval = setInterval(fetchLocation, 20000);
+    const initialTimer = setTimeout(() => fetchLocation(true), 1500);
+    const interval = setInterval(() => fetchLocation(true), 30000);
 
     return () => {
       clearTimeout(initialTimer);

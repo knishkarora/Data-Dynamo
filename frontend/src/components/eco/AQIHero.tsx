@@ -5,6 +5,7 @@ import { ArrowUpRight, Wind, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Link } from "@tanstack/react-router";
 
 const fetchAQI = async (lat: number, lng: number) => {
   console.log('Fetching AQI for:', { lat, lng });
@@ -112,11 +113,14 @@ export function AQIHero() {
 
       <div className="mt-4 flex items-center justify-between text-xs">
         <span className="text-muted-foreground">
-          {data?.dateTime ? `Synced: ${new Date(data.dateTime).toLocaleTimeString()}` : "Updating..."}
+          {data ? `Synced: ${new Date().toLocaleTimeString()}` : "Syncing live..."}
         </span>
-        <button className="inline-flex items-center gap-1 rounded-full bg-white/[0.04] px-3 py-1.5 text-foreground ring-1 ring-white/5 transition hover:bg-white/[0.07]">
+        <Link 
+          to="/analytics"
+          className="inline-flex items-center gap-1 rounded-full bg-white/[0.04] px-3 py-1.5 text-foreground ring-1 ring-white/5 transition hover:bg-white/[0.07]"
+        >
           View details <ArrowUpRight className="h-3 w-3" />
-        </button>
+        </Link>
       </div>
     </GlassCard>
   );

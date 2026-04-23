@@ -173,3 +173,54 @@ exports.getMapReports = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+/**
+ * Get user-specific statistics
+ */
+exports.getUserStats = async (req, res) => {
+  try {
+    const userId = req.auth.userId;
+    const { users } = require('@clerk/clerk-sdk-node');
+    
+    const totalReports = await Report.countDocuments({ user_id: userId });
+    const resolvedReports = await Report.countDocuments({ user_id: userId, status: 'resolved' });
+    
+    const impact = totalReports > 0 ? Math.round((resolvedReports / totalReports) * 100) : 0;
+
+    // Sync to Clerk metadata for faster frontend access
+    try {
+      await users.updateUserMetadata(userId, {
+        publicMetadata: {
+          reportsCount: totalReports,
+          resolvedCount: resolvedReports,
+          impactScore: `${impact}%`
+        }
+      });
+    } catch (clerkErr) {
+      logger.error(`Clerk Metadata Sync Error: ${clerkErr.message}`);
+    }
+
+    res.json({
+      reports: totalReports,
+      resolved: resolvedReports,
+      impact: `${impact}%`
+    });
+  } catch (error) {
+    logger.error(`Get User Stats Error: ${error.message}`);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+/**
+ * Get reports submitted by the current user
+ */
+exports.getMyReports = async (req, res) => {
+  try {
+    const userId = req.auth.userId;
+    const reports = await Report.find({ user_id: userId }).sort({ created_at: -1 });
+    res.json(reports);
+  } catch (error) {
+    logger.error(`Get My Reports Error: ${error.message}`);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};

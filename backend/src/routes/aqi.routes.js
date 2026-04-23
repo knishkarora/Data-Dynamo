@@ -2,6 +2,22 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const logger = require('../config/logger');
+const AQILog = require('../models/AQILog.model');
+
+/**
+ * @route GET /api/aqi/history
+ * @desc Get historical AQI logs
+ */
+router.get('/history', async (req, res) => {
+  try {
+    const history = await AQILog.find()
+      .sort({ timestamp: -1 })
+      .limit(24);
+    res.json(history.reverse()); // Chronological order for charts
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch AQI history' });
+  }
+});
 
 /**
  * @route POST /api/aqi
@@ -31,6 +47,23 @@ router.post('/', async (req, res) => {
         longitude: parseFloat(longitude)
       }
     });
+
+    // Save to database for analytics
+    try {
+      const aqiInfo = response.data.indexes[0];
+      await AQILog.create({
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        aqiValue: aqiInfo.aqi,
+        category: aqiInfo.category,
+        dominantPollutant: aqiInfo.dominantPollutant,
+        regionCode: response.data.regionCode,
+        timestamp: new Date() // Use exact current time for real-time logging
+      });
+      console.log('AQI Log saved to database');
+    } catch (dbError) {
+      console.error('Failed to save AQI log:', dbError.message);
+    }
 
     res.json(response.data);
   } catch (error) {

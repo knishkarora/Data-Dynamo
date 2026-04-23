@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 
 const items = [
   { icon: Home, label: "Overview", to: "/" },
@@ -22,12 +23,26 @@ export function Sidebar() {
   return (
     <aside className="fixed left-4 top-1/2 z-40 -translate-y-1/2">
       <div className="glass-strong glossy flex w-[64px] flex-col items-center gap-1 rounded-full px-2 py-4 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.7)]">
-        <Link
-          to="/"
-          className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal/80 to-blueaccent/70 text-[10px] font-semibold text-background ring-1 ring-white/20 transition hover:brightness-110"
-        >
-          EL
-        </Link>
+        <SignedIn>
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full transition hover:brightness-110 overflow-hidden">
+            <UserButton 
+              afterSignOutUrl="/" 
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: "h-10 w-10",
+                  userButtonTrigger: "h-10 w-10"
+                }
+              }}
+            />
+          </div>
+        </SignedIn>
+        <SignedOut>
+          <SignInButton mode="modal">
+            <button className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-teal/80 text-[10px] font-semibold text-background ring-1 ring-white/20 transition hover:brightness-110">
+              EL
+            </button>
+          </SignInButton>
+        </SignedOut>
         <div className="my-1 h-px w-6 bg-white/5" />
         {items.map((it) => {
           const Icon = it.icon;

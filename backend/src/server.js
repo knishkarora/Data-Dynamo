@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 const logger = require('./config/logger');
 const reportRoutes = require('./routes/report.routes');
 const aiRoutes = require('./routes/ai.routes');
+const aqiRoutes = require('./routes/aqi.routes');
 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -51,6 +52,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Routes
 app.use('/api/reports', reportRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/aqi', aqiRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {

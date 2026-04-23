@@ -77,10 +77,29 @@ exports.createReport = async (req, res) => {
     await redis.del('reports:all');
 
     // 7. Send Email (Async)
-    // In a real app, use the email from req.auth.sessionClaims or fetch from Clerk
-    // For now, we'll assume a placeholder if not available
-    const userEmail = req.auth.claims?.email || 'citizen@example.com'; 
-    emailService.sendConfirmationEmail(userEmail, report);
+    const { createClerkClient } = require('@clerk/clerk-sdk-node');
+    const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+    
+    let userEmail = req.auth.claims?.email;
+    
+    if (!userEmail) {
+      try {
+        const user = await clerkClient.users.getUser(req.auth.userId);
+        userEmail = user.emailAddresses[0]?.emailAddress;
+        console.log('Fetched email from Clerk:', userEmail);
+      } catch (clerkErr) {
+        console.error('Failed to fetch user email from Clerk:', clerkErr.message);
+      }
+    }
+
+    userEmail = userEmail || 'citizen@example.com';
+    console.log(`[CRITICAL DEBUG] Attempting to send confirmation email to: ${userEmail}`);
+    try {
+      await emailService.sendConfirmationEmail(userEmail, report);
+      console.log(`[CRITICAL DEBUG] emailService.sendConfirmationEmail call finished`);
+    } catch (emailErr) {
+      console.error(`[CRITICAL DEBUG] emailService.sendConfirmationEmail CRASHED:`, emailErr);
+    }
 
     res.status(201).json({
       message: 'Report submitted successfully',
@@ -176,14 +195,10 @@ exports.getMapReports = async (req, res) => {
   }
 };
 
-/**
- * Get user-specific statistics
- */
 exports.getUserStats = async (req, res) => {
   try {
+    const { clerkClient } = require('@clerk/clerk-sdk-node');
     const userId = req.auth.userId;
-    const { createClerkClient } = require('@clerk/clerk-sdk-node');
-    const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
     
     const totalReports = await Report.countDocuments({ user_id: userId });
     const resolvedReports = await Report.countDocuments({ user_id: userId, status: 'resolved' });
@@ -306,6 +321,91 @@ exports.getMyReports = async (req, res) => {
   }
 };
 /**
+ * Vote on a report (Up or Down)
+ */
+exports.voteReport = async (req, res) => {
+  try {
+    const userId = req.auth.userId;
+    const { direction } = req.body; // 'up' or 'down'
+    const report = await Report.findById(req.params.id);
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    if (!report.upvotes) report.upvotes = [];
+    if (!report.downvotes) report.downvotes = [];
+
+    const upIndex = report.upvotes.indexOf(userId);
+    const downIndex = report.downvotes.indexOf(userId);
+
+    if (direction === 'up') {
+      if (upIndex > -1) {
+        report.upvotes.splice(upIndex, 1);
+      } else {
+        report.upvotes.push(userId);
+        if (downIndex > -1) report.downvotes.splice(downIndex, 1);
+      }
+    } else if (direction === 'down') {
+      if (downIndex > -1) {
+        report.downvotes.splice(downIndex, 1);
+      } else {
+        report.downvotes.push(userId);
+        if (upIndex > -1) report.upvotes.splice(upIndex, 1);
+      }
+    }
+
+    await report.save();
+    res.json({ 
+      upvotes: report.upvotes.length, 
+      downvotes: report.downvotes.length,
+      score: report.upvotes.length - report.downvotes.length,
+      userVote: report.upvotes.includes(userId) ? 'up' : report.downvotes.includes(userId) ? 'down' : null
+    });
+  } catch (error) {
+    logger.error(`Vote Error: ${error.message}`);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+/**
+ * Add an anonymous comment to a report
+ */
+exports.addComment = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: 'Comment text is required' });
+    }
+
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    // Initialize if missing
+    if (!report.comments) report.comments = [];
+
+    // Generate a fun anonymous name
+    const adjectives = ['Brave', 'Quiet', 'Alert', 'Watchful', 'Eco', 'Green', 'Active'];
+    const animals = ['Leopard', 'Eagle', 'Owl', 'Tiger', 'Wolf', 'Deer', 'Falcon'];
+    const anonName = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${animals[Math.floor(Math.random() * animals.length)]}`;
+
+    report.comments.push({
+      text,
+      anonymous_name: anonName,
+      created_at: new Date()
+    });
+
+    await report.save();
+    res.status(201).json(report.comments[report.comments.length - 1]);
+  } catch (error) {
+    logger.error(`Comment Error: ${error.message}`);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+/**
  * Get a single report by ID
  */
 exports.getReportById = async (req, res) => {
@@ -320,3 +420,4 @@ exports.getReportById = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+

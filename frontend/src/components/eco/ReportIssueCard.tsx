@@ -76,8 +76,8 @@ export function ReportIssueCard() {
       );
     };
 
-    const initialTimer = setTimeout(() => fetchLocation(true), 1500);
-    const interval = setInterval(() => fetchLocation(true), 30000);
+    const initialTimer = setTimeout(() => fetchLocation(true), 5000);
+    const interval = setInterval(() => fetchLocation(true), 180000);
 
     return () => {
       clearTimeout(initialTimer);

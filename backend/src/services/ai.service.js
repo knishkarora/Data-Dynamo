@@ -1,4 +1,6 @@
 const Groq = require('groq-sdk');
+const fs = require('fs');
+const path = require('path');
 const logger = require('../config/logger');
 
 const groq = new Groq({
@@ -107,19 +109,41 @@ const chatWithAI = async (message, history = []) => {
       ).join('\n\n');
     }
 
+    // 3. Ground Water Context (CGWB Data)
+    let waterContext = "";
+    try {
+      const waterDataPath = path.join(__dirname, 'water_data.json');
+      if (fs.existsSync(waterDataPath)) {
+        const waterData = JSON.parse(fs.readFileSync(waterDataPath, 'utf8'));
+        const mentionedState = waterData.data.find(s => 
+          message.toUpperCase().includes(s.name.toUpperCase())
+        );
+        
+        if (mentionedState) {
+          waterContext = `\n\nGROUND WATER DATA FOR ${mentionedState.name} (Source: CGWB):
+- Extraction Stage: ${mentionedState.metrics.stage_of_extraction_percent}%
+- Status: ${mentionedState.metrics.status.toUpperCase().replace('_', ' ')}
+- Total Availability: ${mentionedState.metrics.totalAvailability?.toLocaleString()} ham
+- Future Availability: ${mentionedState.metrics.futureAvailability?.toLocaleString()} ham`;
+        }
+      }
+    } catch (e) {
+      console.error('Error reading water data for RAG:', e);
+    }
+
     // 4. Construct the Augmented Prompt
     const systemPrompt = `You are Climx AI, a professional RAG-powered environment assistant for India. 
-Your primary goal is to provide data-driven insights based on community reports.
+Your primary goal is to provide data-driven insights based on community reports and government environmental data.
 
 CONTEXT FROM LOCAL REPORTS DATABASE:
-${context}
+${context}${waterContext}
 
 INSTRUCTIONS:
-1. Use the provided context to answer user queries about specific local issues.
-2. If the user asks about something not in the context, use your general knowledge but clearly state if you're talking about general trends versus specific community reports.
+1. Use the provided context to answer user queries about specific local issues or groundwater levels.
+2. If the user asks about something not in the context, use your general knowledge but clearly state if you're talking about general trends versus specific data points.
 3. Be concise, professional, and highlight how community reporting is helping resolve issues.
 4. If a report mentioned in the context is 'resolved', mention it as a success story.
-5. If no specific context is available, focus on encouraging the user to report issues they see.`;
+5. If the user mentions a state and water data is provided, use those exact numbers and the official STATUS (e.g., OVER-EXPLOITED) to explain the severity.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },

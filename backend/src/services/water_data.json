@@ -1,0 +1,204 @@
+{
+  "source": "Central Ground Water Board (CGWB)",
+  "lastUpdated": "2023-24 Assessment",
+  "data": [
+    {
+      "name": "MADHYA PRADESH",
+      "metrics": {
+        "totalAvailability": 3414882.36,
+        "currentAvailability": 3414882.36,
+        "extractionStage": 59.32,
+        "futureAvailability": 1451266.73,
+        "stage_of_extraction_percent": 59.32,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "NAGALAND",
+      "metrics": {
+        "totalAvailability": 247573.56,
+        "currentAvailability": 50292.56,
+        "extractionStage": 4.72,
+        "futureAvailability": 47577.98,
+        "stage_of_extraction_percent": 4.72,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "MIZORAM",
+      "metrics": {
+        "totalAvailability": 18954.61,
+        "currentAvailability": 18954.61,
+        "extractionStage": 4.03,
+        "futureAvailability": 18152.66,
+        "stage_of_extraction_percent": 4.03,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "ARUNACHAL PRADESH",
+      "metrics": {
+        "totalAvailability": 328838.35,
+        "currentAvailability": 328838.35,
+        "extractionStage": 0.41,
+        "futureAvailability": 327265.98,
+        "stage_of_extraction_percent": 0.41,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "BIHAR",
+      "metrics": {
+        "totalAvailability": 3132096.73,
+        "currentAvailability": 3132096.73,
+        "extractionStage": 46.2,
+        "futureAvailability": 1576475.71,
+        "stage_of_extraction_percent": 46.2,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "PUNJAB",
+      "metrics": {
+        "totalAvailability": 1889095.02,
+        "currentAvailability": 1889095.02,
+        "extractionStage": 156.36,
+        "futureAvailability": 234098.18,
+        "stage_of_extraction_percent": 156.36,
+        "status": "over_exploited"
+      }
+    },
+    {
+      "name": "UTTAR PRADESH",
+      "metrics": {
+        "totalAvailability": 6697390.82,
+        "currentAvailability": 6697390.82,
+        "extractionStage": 70,
+        "futureAvailability": 2053374.11,
+        "stage_of_extraction_percent": 70,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "WEST BENGAL",
+      "metrics": {
+        "totalAvailability": 31997768.62,
+        "currentAvailability": 2349666.07,
+        "extractionStage": 45.19,
+        "futureAvailability": 1240089.06,
+        "stage_of_extraction_percent": 45.19,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "HARYANA",
+      "metrics": {
+        "totalAvailability": 1126590,
+        "currentAvailability": 1126590,
+        "extractionStage": 134.5,
+        "futureAvailability": 120450,
+        "stage_of_extraction_percent": 134.5,
+        "status": "over_exploited"
+      }
+    },
+    {
+      "name": "RAJASTHAN",
+      "metrics": {
+        "totalAvailability": 1476785.16,
+        "currentAvailability": 1476785.16,
+        "extractionStage": 147.11,
+        "futureAvailability": 326860.45,
+        "stage_of_extraction_percent": 147.11,
+        "status": "over_exploited"
+      }
+    },
+    {
+      "name": "DELHI",
+      "metrics": {
+        "totalAvailability": 34557.15,
+        "currentAvailability": 34557.15,
+        "extractionStage": 92.1,
+        "futureAvailability": 3432.77,
+        "stage_of_extraction_percent": 92.1,
+        "status": "semi_critical"
+      }
+    },
+    {
+      "name": "GUJARAT",
+      "metrics": {
+        "totalAvailability": 3741168.27,
+        "currentAvailability": 3741168.27,
+        "extractionStage": 55.95,
+        "futureAvailability": 2106635.2,
+        "stage_of_extraction_percent": 55.95,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "TAMILNADU",
+      "metrics": {
+        "totalAvailability": 9755975.26,
+        "currentAvailability": 2161405.43,
+        "extractionStage": 73.5,
+        "futureAvailability": 826235.28,
+        "stage_of_extraction_percent": 73.5,
+        "status": "semi_critical"
+      }
+    },
+    {
+      "name": "TELANGANA",
+      "metrics": {
+        "totalAvailability": 4816769.94,
+        "currentAvailability": 1984084.22,
+        "extractionStage": 46.69,
+        "futureAvailability": 1067448.07,
+        "stage_of_extraction_percent": 46.69,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "ANDHRA PRADESH",
+      "metrics": {
+        "totalAvailability": 41550127.61,
+        "currentAvailability": 2784427.12,
+        "extractionStage": 31.51,
+        "futureAvailability": 2012502.43,
+        "stage_of_extraction_percent": 31.51,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "KARNATAKA",
+      "metrics": {
+        "totalAvailability": 1741410.74,
+        "currentAvailability": 1741410.74,
+        "extractionStage": 66.49,
+        "futureAvailability": 731899.88,
+        "stage_of_extraction_percent": 66.49,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "MAHARASHTRA",
+      "metrics": {
+        "totalAvailability": 3223818.31,
+        "currentAvailability": 3223818.31,
+        "extractionStage": 51.79,
+        "futureAvailability": 1596886.93,
+        "stage_of_extraction_percent": 51.79,
+        "status": "safe"
+      }
+    },
+    {
+      "name": "LADAKH",
+      "metrics": {
+        "totalAvailability": 170689520.63,
+        "currentAvailability": 43024482.52,
+        "extractionStage": 60.63,
+        "futureAvailability": 20330711.25,
+        "stage_of_extraction_percent": 60.63,
+        "status": "safe"
+      }
+    }
+  ]
+}

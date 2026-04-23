@@ -40,9 +40,9 @@ function ZoneItem({ city }: { city: { name: string, lat: number, lng: number } }
       <p className="text-[8px] text-white/50 mt-0.5">AQI reading</p>
       <p className={cn(
         "text-lg font-bold leading-none mt-1",
-        isLoading ? "animate-pulse text-white/20" : 
-        aqi && aqi > 200 ? "text-bad" : 
-        aqi && aqi > 100 ? "text-warn" : "text-good"
+        isLoading ? "animate-pulse text-white/20" :
+          aqi && aqi > 200 ? "text-bad" :
+            aqi && aqi > 100 ? "text-warn" : "text-good"
       )}>
         {isLoading ? "---" : aqi || "N/A"}
       </p>
@@ -67,8 +67,8 @@ export function MapCard() {
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [75.8573, 30.901], // Ludhiana, Punjab
-      zoom: 7,
+      center: [78.9629, 22.5937], // India Center
+      zoom: 4,
       attributionControl: false
     });
 
@@ -78,20 +78,27 @@ export function MapCard() {
       positionOptions: {
         enableHighAccuracy: true
       },
-      trackUserLocation: true,
+      trackUserLocation: false, // Don't auto-track every few seconds
       showUserLocation: true,
-      showAccuracyCircle: true
+      showAccuracyCircle: true,
+      fitBoundsOptions: { maxZoom: 17 }
     });
 
     mapRef.current.addControl(geolocate, "top-right");
 
-    // Auto-trigger geolocation after a 3s delay
+    // Auto-trigger geolocation after a 5s delay on reload
     const timer = setTimeout(() => {
       geolocate.trigger();
-    }, 3000);
+    }, 5000);
+
+    // If site stays open, fetch every 3 minutes
+    const interval = setInterval(() => {
+      geolocate.trigger();
+    }, 180000);
 
     return () => {
       clearTimeout(timer);
+      clearInterval(interval);
       mapRef.current?.remove();
     };
   }, []);
@@ -100,7 +107,7 @@ export function MapCard() {
     if (!mapRef.current || !geoJSON) return;
 
     const map = mapRef.current;
-    
+
     const updateSource = () => {
       if (map.getSource('reports')) {
         (map.getSource('reports') as mapboxgl.GeoJSONSource).setData(geoJSON);
@@ -132,10 +139,10 @@ export function MapCard() {
         // Click handler for popups
         map.on('click', 'reports-circle', (e) => {
           if (!e.features || !e.features[0]) return;
-          
+
           const props = e.features[0].properties;
           const coordinates = (e.features[0].geometry as any).coordinates.slice();
-          
+
           new mapboxgl.Popup()
             .setLngLat(coordinates)
             .setHTML(`
@@ -174,7 +181,7 @@ export function MapCard() {
           <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 drop-shadow-md">Environmental map</p>
           <p className="text-sm font-medium text-white drop-shadow-md">India region · {geoJSON?.features?.length || 0} alerts</p>
         </div>
-        
+
         <div className="flex rounded-full bg-black/30 backdrop-blur-md p-1 ring-1 ring-white/10">
           {tabs.map((t) => (
             <button
@@ -190,9 +197,9 @@ export function MapCard() {
           ))}
         </div>
       </div>
-      
+
       <div ref={mapContainerRef} className="h-full w-full bg-slate-900" />
-      
+
       {/* Zones Overlay */}
       <div className="absolute right-4 top-16 bottom-12 z-10 w-32 space-y-2 overflow-y-auto pr-1 scrollbar-none">
         <p className="text-[9px] uppercase tracking-widest text-white/50 mb-2 font-bold px-1">Live Zones</p>
@@ -205,7 +212,7 @@ export function MapCard() {
           <ZoneItem key={city.name} city={city} />
         ))}
       </div>
-      
+
       {/* Legend */}
       <div className="absolute bottom-4 left-4 z-10 flex gap-3 rounded-full bg-black/40 px-3 py-1.5 text-[9px] font-medium text-white backdrop-blur-md ring-1 ring-white/10">
         <div className="flex items-center gap-1.5">

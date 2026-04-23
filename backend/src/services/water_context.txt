@@ -1,0 +1,26 @@
+CENTRAL GROUND WATER BOARD (CGWB) - DYNAMIC GROUND WATER RESOURCES OF INDIA (2023-24)
+
+### 📊 Groundwater Metrics Summary
+
+| State/UT | Extraction (%) | Status | Total Avail (ham) | Future Avail (ham) |
+|----------|----------------|--------|--------------------|--------------------|
+| PUNJAB | 156.36 | OVER-EXPLOITED | 1,889,095 | 234,098 |
+| RAJASTHAN | 147.11 | OVER-EXPLOITED | 1,476,785 | 326,860 |
+| HARYANA | 134.50 | OVER-EXPLOITED | 1,126,590 | 120,450 |
+| DELHI | 92.10 | SEMI-CRITICAL | 34,557 | 3,432 |
+| TAMILNADU | 73.50 | SEMI-CRITICAL | 9,755,975 | 826,235 |
+| UTTAR PRADESH | 70.00 | SEMI-CRITICAL | 6,697,391 | 2,053,374 |
+| MADHYA PRADESH | 59.32 | SAFE | 3,414,882 | 1,451,266 |
+| GUJARAT | 55.95 | SAFE | 3,741,168 | 2,106,635 |
+| MAHARASHTRA | 51.79 | SAFE | 3,223,818 | 1,596,887 |
+| WEST BENGAL | 45.19 | SAFE | 31,997,769 | 1,240,089 |
+| BIHAR | 46.20 | SAFE | 3,132,097 | 1,576,476 |
+
+### 💡 Killer Insights for Pitch
+1. 🔴 **The Punjab Crisis**: At **156% extraction**, Punjab is in a state of severe over-exploitation. The state is literally pumping out 50% more water than it recharges annually.
+2. 🟡 **The Borderline Zone**: Uttar Pradesh and Tamil Nadu are hovering around the **70% mark**. These are future risk zones where semi-critical status could quickly escalate without intervention.
+3. 🟢 **The "Safe" Paradox**: While most states appear green, many are missing robust recharge data, leading to an incomplete picture of true water security.
+4. 📈 **Future Risk**: States like Haryana and Rajasthan are also well over 100%, indicating a systemic water management failure across the breadbasket of India.
+
+Source: Central Ground Water Board (CGWB)
+Last Updated: 2023-24 Dynamic Ground Water Resources Assessment.

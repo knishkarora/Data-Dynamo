@@ -45,7 +45,18 @@ const reportSchema = new mongoose.Schema({
     type: String,
     enum: ['low', 'medium', 'high'],
     default: 'medium'
-  }
+  },
+  upvotes: [{
+    type: String // array of user_ids who upvoted
+  }],
+  downvotes: [{
+    type: String // array of user_ids who downvoted
+  }],
+  comments: [{
+    text: { type: String, required: true },
+    anonymous_name: { type: String, default: 'Citizen' },
+    created_at: { type: Date, default: Date.now }
+  }]
 }, {
   timestamps: { createdAt: 'created_at' }
 });

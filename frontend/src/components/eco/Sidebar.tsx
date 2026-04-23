@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import {
-  Home, FileText, Users, Map as MapIcon, BarChart3, Droplet, Trees, UserCircle, Settings,
+  Home, FileText, Users, Map as MapIcon, BarChart3, Droplet, Trees, UserCircle, Settings, Activity,
 } from "lucide-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/clerk-reac
 const items = [
   { icon: Home, label: "Overview", to: "/" },
   { icon: FileText, label: "Reports", to: "/reports" },
+  { icon: Activity, label: "Real-time Feed", to: "/feed" },
   { icon: Users, label: "Community", to: "/community" },
   { icon: MapIcon, label: "Map", to: "/map" },
   { icon: BarChart3, label: "Analytics", to: "/analytics" },
@@ -78,10 +79,6 @@ export function Sidebar() {
           );
         })}
         <div className="my-1 h-px w-6 bg-white/5" />
-        <Link
-          to="/profile"
-          className="mt-1 h-9 w-9 rounded-full bg-gradient-to-br from-blueaccent/50 to-teal/40 ring-1 ring-white/10 transition hover:brightness-110 hover:ring-teal/40"
-        />
       </div>
     </aside>
   );

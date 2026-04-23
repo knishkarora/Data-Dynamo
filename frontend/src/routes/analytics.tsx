@@ -24,6 +24,12 @@ const fetchAQIHistory = async () => {
   return response.json();
 };
 
+const fetchWaterStats = async () => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/api/water/stats`);
+  if (!response.ok) throw new Error("Failed to fetch water stats");
+  return response.json();
+};
+
 export const Route = createFileRoute("/analytics")({
   head: () => ({
     meta: [
@@ -56,6 +62,14 @@ function AnalyticsPage() {
     queryFn: fetchAQIHistory,
     refetchInterval: 60000,
   });
+
+  const { data: waterStats } = useQuery({
+    queryKey: ["water-stats"],
+    queryFn: fetchWaterStats,
+  });
+
+  const [selectedState, setSelectedState] = useState<string>("");
+  const stateData = waterStats?.data?.find((s: any) => s.name === selectedState);
 
   const liveAQI = aqiData?.indexes?.[0]?.aqi || "---";
   const category = aqiData?.indexes?.[0]?.category || "Syncing...";
@@ -121,6 +135,69 @@ function AnalyticsPage() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </GlassCard>
+
+        <GlassCard className="lg:col-span-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Groundwater Monitoring</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Source: {waterStats?.source || "CGWB"} · {waterStats?.lastUpdated || "2023-24"}</p>
+            </div>
+            
+            <select 
+              value={selectedState}
+              onChange={(e) => setSelectedState(e.target.value)}
+              className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-teal transition-all min-w-[200px]"
+            >
+              <option value="">Select State/UT</option>
+              {waterStats?.data?.map((s: any) => (
+                <option key={s.name} value={s.name}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {!selectedState ? (
+            <div className="h-40 flex items-center justify-center border border-dashed border-white/5 rounded-2xl">
+              <p className="text-xs text-muted-foreground italic">Please select a state to view groundwater analysis</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                <p className="text-[10px] uppercase text-muted-foreground mb-1">Extraction Stage</p>
+                <p className={cn(
+                  "text-xl font-bold",
+                  (stateData?.metrics?.extractionStage || 0) > 100 ? "text-bad" : 
+                  (stateData?.metrics?.extractionStage || 0) > 70 ? "text-warn" : "text-good"
+                )}>
+                  {stateData?.metrics?.extractionStage?.toFixed(1)}%
+                </p>
+                <p className="text-[9px] text-muted-foreground mt-1">
+                  {(stateData?.metrics?.extractionStage || 0) > 100 ? "CRITICAL DEPLETION" : "SAFE LEVELS"}
+                </p>
+              </div>
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                <p className="text-[10px] uppercase text-muted-foreground mb-1">Total Availability</p>
+                <p className="text-xl font-bold text-white">{stateData?.metrics?.totalAvailability?.toLocaleString()}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">ham (Hectare Metre)</p>
+              </div>
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                <p className="text-[10px] uppercase text-muted-foreground mb-1">Future Availability</p>
+                <p className="text-xl font-bold text-teal">{stateData?.metrics?.futureAvailability?.toLocaleString()}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">Projected ham</p>
+              </div>
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                <p className="text-[10px] uppercase text-muted-foreground mb-1">Assessment Status</p>
+                <p className={cn(
+                  "text-lg font-bold tracking-tight uppercase",
+                  stateData?.metrics?.status === "over_exploited" ? "text-bad" : 
+                  stateData?.metrics?.status === "semi_critical" ? "text-warn" : "text-good"
+                )}>
+                  {stateData?.metrics?.status?.replace('_', ' ') || "PENDING"}
+                </p>
+                <p className="text-[9px] text-muted-foreground mt-1">CGWB Classification</p>
+              </div>
+            </div>
+          )}
         </GlassCard>
 
         <GlassCard className="lg:col-span-12">

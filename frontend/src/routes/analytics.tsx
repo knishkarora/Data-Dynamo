@@ -44,10 +44,11 @@ function AnalyticsPage() {
     );
   }, []);
 
-  const { data: aqiData } = useQuery({
+  const { data: aqiData, dataUpdatedAt } = useQuery({
     queryKey: ["aqi", coords],
     queryFn: () => fetchAQI(coords!.lat, coords!.lng),
     enabled: !!coords,
+    refetchInterval: 60000, // Sync every minute
   });
 
   const { data: historyData } = useQuery({
@@ -77,11 +78,13 @@ function AnalyticsPage() {
         </GlassCard>
         <GlassCard className="py-4">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Station Region</p>
-          <p className="mt-1 text-sm font-medium">{aqiData?.regionCode?.toUpperCase() || "..."} (Punjab)</p>
+          <p className="mt-1 text-sm font-medium">{aqiData?.regionCode?.toUpperCase() || "..."} (India)</p>
         </GlassCard>
         <GlassCard className="py-4">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Last Sync</p>
-          <p className="mt-1 text-sm font-medium">{aqiData?.dateTime ? new Date(aqiData.dateTime).toLocaleTimeString() : "Pending..."}</p>
+          <p className="mt-1 text-sm font-medium">
+            {dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "Pending..."}
+          </p>
         </GlassCard>
       </div>
       

@@ -20,7 +20,7 @@ export function AIChatPanel() {
   const { getToken, isSignedIn } = useAuth();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Hi 👋 — air quality in Punjab is currently unhealthy in some regions. Want a breakdown by city?' }
+    { role: 'assistant', content: 'Hi 👋 — air quality in India is currently unhealthy in some regions. Want a breakdown by city?' }
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +59,7 @@ export function AIChatPanel() {
   const handleSend = (text?: string) => {
     const messageToSend = text || input;
     if (!messageToSend.trim() || mutation.isPending) return;
-    if (!isSignedIn) return setMessages(prev => [...prev, { role: 'assistant', content: "Please sign in to chat with EcoLens AI." }]);
+    if (!isSignedIn) return setMessages(prev => [...prev, { role: 'assistant', content: "Please sign in to chat with Climx AI." }]);
 
     setMessages(prev => [...prev, { role: 'user', content: messageToSend }]);
     setInput("");
@@ -73,14 +73,14 @@ export function AIChatPanel() {
           <Sparkles className="h-4 w-4 text-teal" strokeWidth={1.6} />
         </div>
         <div>
-          <p className="text-sm text-foreground">EcoLens AI</p>
+          <p className="text-sm text-foreground">Climx AI</p>
           <p className="text-[10px] text-muted-foreground">Powered by Llama 3 & Groq</p>
         </div>
       </div>
 
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-none"
+        className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin"
       >
         {messages.map((m, i) => (
           <div 
@@ -122,7 +122,7 @@ export function AIChatPanel() {
         >
           <input
             className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
-            placeholder="Ask EcoLens AI…"
+            placeholder="Ask Climx AI…"
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />

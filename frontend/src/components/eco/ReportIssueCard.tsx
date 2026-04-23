@@ -23,6 +23,7 @@ export function ReportIssueCard() {
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(categories[0].id);
+  const [severity, setSeverity] = useState("medium");
   const [location, setLocation] = useState({ lat: 30.901, lng: 75.8573 }); // Default Ludhiana
   const [isLocating, setIsLocating] = useState(false);
   const [locationLabel, setLocationLabel] = useState("Ludhiana, Punjab (Default)");
@@ -169,6 +170,7 @@ export function ReportIssueCard() {
     formData.append("image", file);
     formData.append("description", description);
     formData.append("category", category);
+    formData.append("severity", severity);
     formData.append("latitude", location.lat.toString());
     formData.append("longitude", location.lng.toString());
 
@@ -201,7 +203,7 @@ export function ReportIssueCard() {
         >
           <h3 className="text-xl font-semibold text-foreground">Report Received!</h3>
           <p className="mt-3 text-sm text-muted-foreground max-w-[200px] mx-auto">
-            Our AI is processing your report. Your contribution helps make Punjab cleaner.
+            Our AI is processing your report. Your contribution helps make India cleaner.
           </p>
           <button 
             onClick={() => setSuccess(false)}
@@ -269,6 +271,19 @@ export function ReportIssueCard() {
             className="w-full appearance-none rounded-2xl bg-white/[0.025] px-3 py-2.5 text-xs text-foreground ring-1 ring-white/5 focus:outline-none"
           >
             {categories.map(c => <option key={c.id} value={c.id} className="bg-[#121212]">{c.label}</option>)}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+        </div>
+
+        <div className="mt-2 relative">
+          <select 
+            value={severity}
+            onChange={(e) => setSeverity(e.target.value)}
+            className="w-full appearance-none rounded-2xl bg-white/[0.025] px-3 py-2.5 text-xs text-foreground ring-1 ring-white/5 focus:outline-none"
+          >
+            <option value="low" className="bg-[#121212]">Low Severity</option>
+            <option value="medium" className="bg-[#121212]">Medium Severity</option>
+            <option value="high" className="bg-[#121212]">High Severity</option>
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
         </div>

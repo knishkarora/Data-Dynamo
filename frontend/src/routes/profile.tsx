@@ -17,7 +17,8 @@ function ProfilePage() {
   const [stats, setStats] = useState({ 
     reports: (user?.publicMetadata?.reportsCount as number) || 0, 
     resolved: (user?.publicMetadata?.resolvedCount as number) || 0, 
-    impact: (user?.publicMetadata?.impactScore as string) || "0%" 
+    impact: (user?.publicMetadata?.impactScore as string) || "0%",
+    badges: (user?.publicMetadata?.badges as string[]) || []
   });
   const [myReports, setMyReports] = useState<any[]>([]);
 
@@ -73,7 +74,7 @@ function ProfilePage() {
               <MapPin className="h-3 w-3" /> {user?.publicMetadata?.location as string || "Location Not Set"}
             </p>
             <p className="mt-3 text-[11px] uppercase tracking-wider text-teal font-semibold">
-              {stats.reports > 50 ? "Top contributor · Tier 2" : "Eco Explorer · Tier 1"}
+              {stats.reports >= 10 ? "Top contributor · Tier 2" : "Eco Explorer · Tier 1"}
             </p>
           </div>
         </GlassCard>
@@ -108,7 +109,7 @@ function ProfilePage() {
                       <img src={`${import.meta.env.VITE_API_URL}${report.image_url}`} alt="" className="h-full w-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{report.category}</p>
+                      <p className="text-sm font-medium truncate">{report.category.replace(/_/g, ' ')}</p>
                       <p className="text-xs text-muted-foreground truncate">{report.description}</p>
                     </div>
                     <div className={`px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-semibold ${
@@ -127,16 +128,22 @@ function ProfilePage() {
           </GlassCard>
 
           <GlassCard>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Recent badges</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Earned Badges</p>
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {["Air Watcher", "River Guard", "Tree Hero", "Whistleblower"].map((b) => (
-                <div key={b} className="glossy flex flex-col items-center rounded-2xl bg-white/[0.025] p-3 text-center ring-1 ring-white/5 transition hover:bg-white/[0.05]">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal/30 to-blueaccent/20 ring-1 ring-teal/30">
-                    <Award className="h-4 w-4 text-teal" />
+              {stats.badges.length > 0 ? (
+                stats.badges.map((b) => (
+                  <div key={b} className="glossy flex flex-col items-center rounded-2xl bg-white/[0.025] p-3 text-center ring-1 ring-white/5 transition hover:bg-white/[0.05]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal/30 to-blueaccent/20 ring-1 ring-teal/30">
+                      <Award className="h-4 w-4 text-teal" />
+                    </div>
+                    <p className="mt-2 text-[10px] text-muted-foreground">{b}</p>
                   </div>
-                  <p className="mt-2 text-[10px] text-muted-foreground">{b}</p>
+                ))
+              ) : (
+                <div className="col-span-full p-4 text-center text-[10px] text-muted-foreground italic bg-white/5 rounded-xl">
+                  Submit reports to earn environment protection badges!
                 </div>
-              ))}
+              )}
             </div>
           </GlassCard>
         </div>

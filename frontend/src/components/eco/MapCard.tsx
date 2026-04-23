@@ -16,6 +16,40 @@ const fetchMapReports = async () => {
 
 const tabs = ["AQI", "Fire Data", "Reports"] as const;
 
+const fetchZoneAQI = async (lat: number, lng: number) => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/api/aqi`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ latitude: lat, longitude: lng })
+  });
+  if (!response.ok) throw new Error("Failed to fetch zone AQI");
+  const data = await response.json();
+  return data.indexes[0].aqi;
+};
+
+function ZoneItem({ city }: { city: { name: string, lat: number, lng: number } }) {
+  const { data: aqi, isLoading } = useQuery({
+    queryKey: ["zone-aqi", city.name],
+    queryFn: () => fetchZoneAQI(city.lat, city.lng),
+    refetchInterval: 600000, // 10 mins
+  });
+
+  return (
+    <div className="rounded-xl bg-black/40 p-2.5 backdrop-blur-md ring-1 ring-white/10 transition-all hover:bg-black/60">
+      <p className="text-[10px] font-bold text-white/90">{city.name}</p>
+      <p className="text-[8px] text-white/50 mt-0.5">AQI reading</p>
+      <p className={cn(
+        "text-lg font-bold leading-none mt-1",
+        isLoading ? "animate-pulse text-white/20" : 
+        aqi && aqi > 200 ? "text-bad" : 
+        aqi && aqi > 100 ? "text-warn" : "text-good"
+      )}>
+        {isLoading ? "---" : aqi || "N/A"}
+      </p>
+    </div>
+  );
+}
+
 export function MapCard() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -138,7 +172,7 @@ export function MapCard() {
       <div className="absolute top-4 left-4 z-10 flex items-start justify-between w-[calc(100%-32px)]">
         <div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 drop-shadow-md">Environmental map</p>
-          <p className="text-sm font-medium text-white drop-shadow-md">Punjab region · {geoJSON?.features?.length || 0} alerts</p>
+          <p className="text-sm font-medium text-white drop-shadow-md">India region · {geoJSON?.features?.length || 0} alerts</p>
         </div>
         
         <div className="flex rounded-full bg-black/30 backdrop-blur-md p-1 ring-1 ring-white/10">
@@ -158,6 +192,19 @@ export function MapCard() {
       </div>
       
       <div ref={mapContainerRef} className="h-full w-full bg-slate-900" />
+      
+      {/* Zones Overlay */}
+      <div className="absolute right-4 top-16 bottom-12 z-10 w-32 space-y-2 overflow-y-auto pr-1 scrollbar-none">
+        <p className="text-[9px] uppercase tracking-widest text-white/50 mb-2 font-bold px-1">Live Zones</p>
+        {[
+          { name: "Amritsar", lat: 31.634, lng: 74.872 },
+          { name: "Ludhiana", lat: 30.901, lng: 75.857 },
+          { name: "Jalandhar", lat: 31.326, lng: 75.576 },
+          { name: "Patiala", lat: 30.340, lng: 76.387 }
+        ].map(city => (
+          <ZoneItem key={city.name} city={city} />
+        ))}
+      </div>
       
       {/* Legend */}
       <div className="absolute bottom-4 left-4 z-10 flex gap-3 rounded-full bg-black/40 px-3 py-1.5 text-[9px] font-medium text-white backdrop-blur-md ring-1 ring-white/10">

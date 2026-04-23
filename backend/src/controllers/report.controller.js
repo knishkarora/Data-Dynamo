@@ -11,6 +11,7 @@ const reportSchema = z.object({
   latitude: z.string().transform(Number),
   longitude: z.string().transform(Number),
   category: z.string(),
+  severity: z.string().optional().default('medium'),
   description: z.string().min(10)
 });
 
@@ -34,7 +35,7 @@ exports.createReport = async (req, res) => {
       return res.status(400).json({ error: 'Image is required' });
     }
 
-    const { latitude, longitude, category, description } = validatedData;
+    const { latitude, longitude, category, severity, description } = validatedData;
     const imageUrl = `/uploads/${req.file.filename}`; // In production, upload to S3/Cloudinary
 
     // 2. AI Processing
@@ -51,6 +52,7 @@ exports.createReport = async (req, res) => {
       image_url: imageUrl,
       location: { lat: latitude, lng: longitude },
       category,
+      severity,
       description,
       summary,
       embedding_id: `vec_${Date.now()}` // Temporary ID for Pinecone
@@ -180,20 +182,41 @@ exports.getMapReports = async (req, res) => {
 exports.getUserStats = async (req, res) => {
   try {
     const userId = req.auth.userId;
-    const { users } = require('@clerk/clerk-sdk-node');
+    const { createClerkClient } = require('@clerk/clerk-sdk-node');
+    const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
     
     const totalReports = await Report.countDocuments({ user_id: userId });
     const resolvedReports = await Report.countDocuments({ user_id: userId, status: 'resolved' });
     
     const impact = totalReports > 0 ? Math.round((resolvedReports / totalReports) * 100) : 0;
 
+    // Calculate badges based on categories
+    const categories = await Report.distinct('category', { user_id: userId });
+    const badges = [];
+    if (categories.some(c => ['stubble_burning', 'garbage_burning', 'industrial_burning', 'extreme_aqi'].includes(c))) {
+      badges.push('Air Watcher');
+    }
+    if (categories.some(c => ['water_misuse', 'water_pollution'].includes(c))) {
+      badges.push('River Guard');
+    }
+    if (categories.some(c => ['green_cover_loss', 'fake_plantation'].includes(c))) {
+      badges.push('Green Guardian');
+    }
+    if (categories.some(c => ['illegal_dumping', 'toxic_waste', 'govt_negligence'].includes(c))) {
+      badges.push('Ground Defender');
+    }
+    if (totalReports >= 10) {
+      badges.push('Top Contributor');
+    }
+
     // Sync to Clerk metadata for faster frontend access
     try {
-      await users.updateUserMetadata(userId, {
+      await clerkClient.users.updateUserMetadata(userId, {
         publicMetadata: {
           reportsCount: totalReports,
           resolvedCount: resolvedReports,
-          impactScore: `${impact}%`
+          impactScore: `${impact}%`,
+          badges: badges
         }
       });
     } catch (clerkErr) {
@@ -203,10 +226,68 @@ exports.getUserStats = async (req, res) => {
     res.json({
       reports: totalReports,
       resolved: resolvedReports,
-      impact: `${impact}%`
+      impact: `${impact}%`,
+      badges: badges
     });
   } catch (error) {
     logger.error(`Get User Stats Error: ${error.message}`);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+/**
+ * Get report counts by severity and category for filters
+ */
+exports.getReportCounts = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const counts = await Report.aggregate([
+      {
+        $facet: {
+          bySeverity: [
+            { $group: { _id: "$severity", count: { $sum: 1 } } }
+          ],
+          byCategory: [
+            { $group: { _id: "$category", count: { $sum: 1 } } }
+          ],
+          todayCount: [
+            { $match: { created_at: { $gte: today } } },
+            { $count: "count" }
+          ],
+          resolvedCount: [
+            { $match: { status: "resolved" } },
+            { $count: "count" }
+          ],
+          totalCount: [
+            { $count: "count" }
+          ]
+        }
+      }
+    ]);
+
+    const result = {
+      severity: { high: 0, medium: 0, low: 0 },
+      categories: {},
+      today: counts[0].todayCount[0]?.count || 0,
+      total: counts[0].totalCount[0]?.count || 0,
+      resolvedPercent: counts[0].totalCount[0]?.count > 0 
+        ? Math.round((counts[0].resolvedCount[0]?.count || 0) / counts[0].totalCount[0].count * 100) 
+        : 0
+    };
+
+    counts[0].bySeverity.forEach(s => {
+      if (s._id) result.severity[s._id] = s.count;
+    });
+
+    counts[0].byCategory.forEach(c => {
+      if (c._id) result.categories[c._id] = c.count;
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error(`Get Report Counts Error: ${error.message}`);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -221,6 +302,21 @@ exports.getMyReports = async (req, res) => {
     res.json(reports);
   } catch (error) {
     logger.error(`Get My Reports Error: ${error.message}`);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+/**
+ * Get a single report by ID
+ */
+exports.getReportById = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+    res.json(report);
+  } catch (error) {
+    logger.error(`Get Report By ID Error: ${error.message}`);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };

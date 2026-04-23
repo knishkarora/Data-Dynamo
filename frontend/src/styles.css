@@ -215,4 +215,18 @@
   .glossy > * { position: relative; z-index: 2; }
   .scrollbar-none::-webkit-scrollbar { display: none; }
   .scrollbar-none { scrollbar-width: none; }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: oklch(0.78 0.13 185 / 0.3);
+    border-radius: 10px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.78 0.13 185 / 0.5);
+  }
 }

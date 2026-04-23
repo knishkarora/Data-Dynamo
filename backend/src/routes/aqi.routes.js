@@ -12,7 +12,7 @@ router.get('/history', async (req, res) => {
   try {
     const history = await AQILog.find()
       .sort({ timestamp: -1 })
-      .limit(24);
+      .limit(100);
     res.json(history.reverse()); // Chronological order for charts
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch AQI history' });

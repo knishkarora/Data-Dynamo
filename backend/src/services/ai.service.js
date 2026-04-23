@@ -66,33 +66,80 @@ const generateEmbedding = async (text) => {
 };
 
 /**
- * Chat with the EcoLens AI
+ * Chat with the Climx AI (Hybrid RAG Implementation)
  */
 const chatWithAI = async (message, history = []) => {
   try {
+    const pineconeService = require('./pinecone.service');
+    const Report = require('../models/Report');
+    
+    console.log('Climx RAG: Starting Hybrid Retrieval for query:', message);
+    
+    // 1. Vector Search (Pinecone)
+    const queryEmbedding = await generateEmbedding(message);
+    const vectorMatches = await pineconeService.findSimilarReports(queryEmbedding, 2);
+    
+    // 2. Keyword Search (MongoDB Text Index)
+    const keywordMatches = await Report.find(
+      { $text: { $search: message } },
+      { score: { $meta: "textScore" } }
+    ).sort({ score: { $meta: "textScore" } }).limit(2);
+
+    // 3. Combine and De-duplicate Results
+    const combinedResults = new Map();
+    
+    // Add vector matches
+    if (vectorMatches.length > 0) {
+      const reportIds = vectorMatches.map(m => m.metadata.report_id);
+      const reports = await Report.find({ _id: { $in: reportIds } });
+      reports.forEach(r => combinedResults.set(r._id.toString(), r));
+    }
+    
+    // Add keyword matches
+    keywordMatches.forEach(r => combinedResults.set(r._id.toString(), r));
+
+    const finalContextReports = Array.from(combinedResults.values());
+    
+    let context = "No specific related reports found in our database.";
+    if (finalContextReports.length > 0) {
+      context = finalContextReports.map(r => 
+        `Report [ID: ${r._id}, Category: ${r.category}, Status: ${r.status}]: ${r.description}`
+      ).join('\n\n');
+    }
+
+    // 4. Construct the Augmented Prompt
+    const systemPrompt = `You are Climx AI, a professional RAG-powered environment assistant for India. 
+Your primary goal is to provide data-driven insights based on community reports.
+
+CONTEXT FROM LOCAL REPORTS DATABASE:
+${context}
+
+INSTRUCTIONS:
+1. Use the provided context to answer user queries about specific local issues.
+2. If the user asks about something not in the context, use your general knowledge but clearly state if you're talking about general trends versus specific community reports.
+3. Be concise, professional, and highlight how community reporting is helping resolve issues.
+4. If a report mentioned in the context is 'resolved', mention it as a success story.
+5. If no specific context is available, focus on encouraging the user to report issues they see.`;
+
     const messages = [
-      {
-        role: 'system',
-        content: 'You are EcoLens AI, a helpful assistant for the environmental and civic reporting platform in Punjab. You provide data-driven insights about air quality, stubble burning, and community reports. Keep your answers concise, professional, and helpful.'
-      },
+      { role: 'system', content: systemPrompt },
       ...history,
       { role: 'user', content: message }
     ];
 
-    console.log('EcoLens AI: Sending request to Groq with model llama3-8b-8192');
+    console.log(`Climx RAG: Sending augmented prompt with ${finalContextReports.length} reports in context...`);
     const chatCompletion = await groq.chat.completions.create({
       messages,
       model: 'llama-3.3-70b-versatile',
-      temperature: 0.7,
-      max_tokens: 512,
+      temperature: 0.3, // Lower temperature for high precision RAG
+      max_tokens: 1024,
     });
-    console.log('EcoLens AI: Received response from Groq');
 
     return chatCompletion.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
   } catch (error) {
-    console.error('GROQ SDK ERROR:', error);
-    logger.error(`Groq Chat Error: ${error.message}`);
-    throw new Error(`AI assistant error: ${error.message}`);
+    console.error('CLIMX RAG ERROR:', error);
+    logger.error(`RAG Chat Error: ${error.message}`);
+    throw new Error(`RAG assistant error: ${error.message}`);
   }
 };
 

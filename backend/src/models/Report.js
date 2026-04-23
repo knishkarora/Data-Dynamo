@@ -40,6 +40,11 @@ const reportSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'verified', 'resolved'],
     default: 'pending'
+  },
+  severity: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
   }
 }, {
   timestamps: { createdAt: 'created_at' }
@@ -47,6 +52,20 @@ const reportSchema = new mongoose.Schema({
 
 // GeoJSON for Mapbox
 reportSchema.index({ "location.lng": 1, "location.lat": 1 });
+
+// Text Index for RAG keyword search
+reportSchema.index({ 
+  category: 'text', 
+  description: 'text', 
+  summary: 'text' 
+}, {
+  weights: {
+    category: 10,
+    summary: 5,
+    description: 2
+  },
+  name: "ReportTextIndex"
+});
 
 const Report = mongoose.model('Report', reportSchema);
 

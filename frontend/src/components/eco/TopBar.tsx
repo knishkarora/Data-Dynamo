@@ -21,7 +21,7 @@ export function TopBar() {
         </span>
       </button>
       <div className="glass hidden h-11 items-center gap-2 rounded-full px-4 text-xs text-muted-foreground md:flex">
-        <Calendar className="h-3.5 w-3.5" strokeWidth={1.6} /> May 25, 2025
+        <Calendar className="h-3.5 w-3.5" strokeWidth={1.6} /> {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
       </div>
       
       <div className="flex items-center gap-3">

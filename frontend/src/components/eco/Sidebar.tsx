@@ -39,7 +39,7 @@ export function Sidebar() {
         <SignedOut>
           <SignInButton mode="modal">
             <button className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-teal/80 text-[10px] font-semibold text-background ring-1 ring-white/20 transition hover:brightness-110">
-              EL
+              CX
             </button>
           </SignInButton>
         </SignedOut>

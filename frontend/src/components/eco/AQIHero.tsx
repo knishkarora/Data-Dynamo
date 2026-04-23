@@ -32,7 +32,7 @@ export function AQIHero() {
     );
   }, []);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, dataUpdatedAt } = useQuery({
     queryKey: ["aqi", coords],
     queryFn: () => fetchAQI(coords!.lat, coords!.lng),
     enabled: !!coords && !!coords.lat && !!coords.lng,
@@ -113,7 +113,7 @@ export function AQIHero() {
 
       <div className="mt-4 flex items-center justify-between text-xs">
         <span className="text-muted-foreground">
-          {data ? `Synced: ${new Date().toLocaleTimeString()}` : "Syncing live..."}
+          {dataUpdatedAt ? `Synced: ${new Date(dataUpdatedAt).toLocaleTimeString()}` : "Syncing live..."}
         </span>
         <Link 
           to="/analytics"

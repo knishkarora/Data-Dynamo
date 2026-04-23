@@ -8,10 +8,29 @@ const connectDB = require('./config/db');
 const logger = require('./config/logger');
 const reportRoutes = require('./routes/report.routes');
 
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Make io accessible to routes
+app.set('io', io);
 
 // Connect to Database
 connectDB();
+
+// Verify Environment Variables
+logger.info(`Clerk Publishable Key: ${process.env.CLERK_PUBLISHABLE_KEY ? 'Loaded' : 'MISSING'}`);
+logger.info(`Clerk Secret Key: ${process.env.CLERK_SECRET_KEY ? 'Loaded' : 'MISSING'}`);
+logger.info(`CORS Origins: ${process.env.CORS_ORIGINS}`);
 
 // Middleware
 app.use(helmet({
@@ -36,6 +55,14 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
+// Socket.io connection
+io.on('connection', (socket) => {
+  logger.info(`User connected: ${socket.id}`);
+  socket.on('disconnect', () => {
+    logger.info(`User disconnected: ${socket.id}`);
+  });
+});
+
 // Error Handling Middleware
 app.use((err, req, res, next) => {
   logger.error(err.stack);
@@ -46,6 +73,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 8002;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });

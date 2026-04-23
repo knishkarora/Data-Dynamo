@@ -1,4 +1,5 @@
 import { Bell, Calendar, Command, Search, Sun } from "lucide-react";
+import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 
 export function TopBar() {
   return (
@@ -22,9 +23,24 @@ export function TopBar() {
       <div className="glass hidden h-11 items-center gap-2 rounded-full px-4 text-xs text-muted-foreground md:flex">
         <Calendar className="h-3.5 w-3.5" strokeWidth={1.6} /> May 25, 2025
       </div>
-      <button className="glass flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground">
-        <Sun className="h-4 w-4" strokeWidth={1.6} />
-      </button>
+      
+      <div className="flex items-center gap-3">
+        <SignedIn>
+          <div className="flex h-11 w-11 items-center justify-center rounded-full glass overflow-hidden">
+            <UserButton afterSignOutUrl="/" />
+          </div>
+        </SignedIn>
+        <SignedOut>
+          <SignInButton mode="modal">
+            <button className="glass h-11 px-4 rounded-full text-xs font-medium text-foreground hover:bg-white/5 transition">
+              Sign In
+            </button>
+          </SignInButton>
+        </SignedOut>
+        <button className="glass flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground">
+          <Sun className="h-4 w-4" strokeWidth={1.6} />
+        </button>
+      </div>
     </header>
   );
 }

@@ -24,7 +24,7 @@ export function MapCard() {
   const { data: geoJSON } = useQuery({
     queryKey: ["reports:geojson"],
     queryFn: fetchMapReports,
-    refetchInterval: 30000, // Update every 30 seconds
+    refetchInterval: 5000, // Update every 5 seconds
   });
 
   useEffect(() => {

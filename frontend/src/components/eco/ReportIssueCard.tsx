@@ -1,10 +1,11 @@
 import { GlassCard } from "./GlassCard";
-import { ChevronDown, MapPin, ShieldCheck, Upload, Loader2, CheckCircle2 } from "lucide-react";
+import { ChevronDown, MapPin, ShieldCheck, Upload, Loader2, CheckCircle2, Lock } from "lucide-react";
 import { useState, useRef } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 
 const categories = [
   { id: "stubble_burning", label: "Stubble Burning" },
@@ -16,7 +17,7 @@ const categories = [
 ];
 
 export function ReportIssueCard() {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const queryClient = useQueryClient();
   const [success, setSuccess] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -27,7 +28,15 @@ export function ReportIssueCard() {
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
+      console.log("Starting submission mutation...");
       const token = await getToken();
+      console.log("Token acquired:", !!token);
+      
+      if (!token) {
+        throw new Error("You must be signed in to report an issue");
+      }
+
+      console.log("Sending POST request to:", `${import.meta.env.VITE_API_URL}/api/reports`);
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reports`, {
         method: "POST",
         headers: {
@@ -36,6 +45,7 @@ export function ReportIssueCard() {
         body: formData
       });
 
+      console.log("Response status:", response.status);
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Submission failed response:', errorText);
@@ -48,7 +58,8 @@ export function ReportIssueCard() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Submission successful!", data);
       setSuccess(true);
       toast.success("Report submitted successfully!");
       // Instant update of the feed!
@@ -63,14 +74,28 @@ export function ReportIssueCard() {
       }, 3000);
     },
     onError: (error: any) => {
-      console.error(error);
+      console.error("Mutation error:", error);
       toast.error(error.message || "Submission failed. Please try again.");
     }
   });
 
   const handleSubmit = () => {
-    if (!file) return toast.error("Please upload an image");
-    if (description.length < 10) return toast.error("Description must be at least 10 characters");
+    console.log("Submit button clicked!");
+    
+    if (!isSignedIn) {
+      console.warn("Submission blocked: User not signed in");
+      return toast.error("Please sign in first");
+    }
+
+    if (!file) {
+      console.warn("Submission blocked: No file selected");
+      return toast.error("Please upload an image");
+    }
+    
+    if (description.length < 10) {
+      console.warn("Submission blocked: Description too short");
+      return toast.error("Description must be at least 10 characters");
+    }
 
     const formData = new FormData();
     formData.append("image", file);
@@ -79,88 +104,132 @@ export function ReportIssueCard() {
     formData.append("latitude", location.lat.toString());
     formData.append("longitude", location.lng.toString());
 
+    console.log("Form data prepared, starting mutation...");
     mutation.mutate(formData);
   };
 
   if (success) {
     return (
-      <GlassCard className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-good/10 text-good">
-          <CheckCircle2 className="h-8 w-8" />
-        </div>
-        <h3 className="mt-4 text-lg font-medium text-foreground">Report Received!</h3>
-        <p className="mt-2 text-sm text-muted-foreground">Your contribution helps make Punjab cleaner.</p>
+      <GlassCard className="flex flex-col items-center justify-center py-12 text-center min-h-[300px]">
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-good/10 text-good mb-6"
+        >
+          <motion.div
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <CheckCircle2 className="h-10 w-10" />
+          </motion.div>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <h3 className="text-xl font-semibold text-foreground">Report Received!</h3>
+          <p className="mt-3 text-sm text-muted-foreground max-w-[200px] mx-auto">
+            Our AI is processing your report. Your contribution helps make Punjab cleaner.
+          </p>
+          <button 
+            onClick={() => setSuccess(false)}
+            className="mt-8 text-xs text-teal hover:underline font-medium"
+          >
+            Submit another report
+          </button>
+        </motion.div>
       </GlassCard>
     );
   }
 
   return (
     <GlassCard>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Report an issue</p>
-          <p className="mt-1 text-sm text-foreground/80">Help your community</p>
+      <SignedIn>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Report an issue</p>
+            <p className="mt-1 text-sm text-foreground/80">Help your community</p>
+          </div>
         </div>
-      </div>
 
-      <input 
-        type="file" 
-        className="hidden" 
-        ref={fileInputRef} 
-        accept="image/*"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
-      />
+        <input 
+          type="file" 
+          className="hidden" 
+          ref={fileInputRef} 
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+        />
 
-      <button 
-        onClick={() => fileInputRef.current?.click()}
-        className="mt-5 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/10 bg-white/[0.015] py-7 text-center transition hover:border-teal/40 hover:bg-white/[0.03]"
-      >
-        <div className={cn("flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.04] text-teal", file && "bg-teal/20")}>
-          <Upload className="h-4 w-4" strokeWidth={1.6} />
-        </div>
-        <p className="text-sm text-foreground">{file ? file.name : "Drop photo or video"}</p>
-        <p className="text-[11px] text-muted-foreground">or browse · max 10MB</p>
-      </button>
-
-      <div className="mt-3 flex flex-col gap-2 rounded-2xl bg-white/[0.025] px-3 py-2.5 ring-1 ring-white/5">
-        <div className="flex items-center gap-2">
-          <MapPin className="h-3.5 w-3.5 text-teal" strokeWidth={1.8} />
-          <span className="flex-1 text-xs text-foreground">Ludhiana, Punjab (Detected)</span>
-          <span className="rounded-full bg-good/15 px-2 py-0.5 text-[10px] text-good ring-1 ring-good/20">GPS</span>
-        </div>
-      </div>
-
-      <div className="mt-2 relative">
-        <select 
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="w-full appearance-none rounded-2xl bg-white/[0.025] px-3 py-2.5 text-xs text-foreground ring-1 ring-white/5 focus:outline-none"
+        <button 
+          onClick={() => fileInputRef.current?.click()}
+          className="mt-5 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/10 bg-white/[0.015] py-7 text-center transition hover:border-teal/40 hover:bg-white/[0.03]"
         >
-          {categories.map(c => <option key={c.id} value={c.id} className="bg-[#121212]">{c.label}</option>)}
-        </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-      </div>
+          <div className={cn("flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.04] text-teal", file && "bg-teal/20")}>
+            <Upload className="h-4 w-4" strokeWidth={1.6} />
+          </div>
+          <p className="text-sm text-foreground">{file ? file.name : "Drop photo or video"}</p>
+          <p className="text-[11px] text-muted-foreground">or browse · max 10MB</p>
+        </button>
 
-      <textarea 
-        placeholder="Describe the issue..."
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        className="mt-2 w-full rounded-2xl bg-white/[0.025] px-3 py-2.5 text-xs text-foreground ring-1 ring-white/5 focus:outline-none min-h-[80px] resize-none placeholder:text-muted-foreground"
-      />
+        <div className="mt-3 flex flex-col gap-2 rounded-2xl bg-white/[0.025] px-3 py-2.5 ring-1 ring-white/5">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-3.5 w-3.5 text-teal" strokeWidth={1.8} />
+            <span className="flex-1 text-xs text-foreground">Ludhiana, Punjab (Detected)</span>
+            <span className="rounded-full bg-good/15 px-2 py-0.5 text-[10px] text-good ring-1 ring-good/20">GPS</span>
+          </div>
+        </div>
 
-      <button 
-        onClick={handleSubmit}
-        disabled={mutation.isPending}
-        className="mt-4 flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-teal to-blueaccent px-4 py-3 text-sm font-medium text-background shadow-[0_10px_30px_-12px_var(--teal)] transition active:scale-[0.99] disabled:opacity-50"
-      >
-        {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit report"}
-      </button>
+        <div className="mt-2 relative">
+          <select 
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full appearance-none rounded-2xl bg-white/[0.025] px-3 py-2.5 text-xs text-foreground ring-1 ring-white/5 focus:outline-none"
+          >
+            {categories.map(c => <option key={c.id} value={c.id} className="bg-[#121212]">{c.label}</option>)}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+        </div>
 
-      <p className="mt-3 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-        <ShieldCheck className="h-3 w-3" /> Reports are public and anonymized
-      </p>
+        <textarea 
+          placeholder="Describe the issue..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="mt-2 w-full rounded-2xl bg-white/[0.025] px-3 py-2.5 text-xs text-foreground ring-1 ring-white/5 focus:outline-none min-h-[80px] resize-none placeholder:text-muted-foreground"
+        />
+
+        <button 
+          onClick={handleSubmit}
+          disabled={mutation.isPending}
+          className="mt-4 flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-teal to-blueaccent px-4 py-3 text-sm font-medium text-background shadow-[0_10px_30px_-12px_var(--teal)] transition active:scale-[0.99] disabled:opacity-50"
+        >
+          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit report"}
+        </button>
+
+        <p className="mt-3 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <ShieldCheck className="h-3 w-3" /> Reports are public and anonymized
+        </p>
+      </SignedIn>
+
+      <SignedOut>
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-teal/10 text-teal">
+            <Lock className="h-6 w-6" />
+          </div>
+          <h3 className="text-lg font-medium text-foreground">Sign in Required</h3>
+          <p className="mt-2 text-xs text-muted-foreground max-w-[200px]">
+            Please sign in to your account to report civic issues and earn impact points.
+          </p>
+          <SignInButton mode="modal">
+            <button className="mt-6 w-full rounded-2xl bg-teal px-4 py-2.5 text-xs font-medium text-background transition hover:bg-teal/90">
+              Sign In to Report
+            </button>
+          </SignInButton>
+        </div>
+      </SignedOut>
     </GlassCard>
   );
 }
-
-

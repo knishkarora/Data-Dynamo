@@ -1,8 +1,10 @@
 import { GlassCard } from "./GlassCard";
-import { Heart, MapPin, Loader2 } from "lucide-react";
+import { Heart, MapPin, Loader2, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { io } from "socket.io-client";
 
 const sevTone: Record<string, string> = {
   high: "bg-bad/15 text-bad ring-bad/30",
@@ -19,11 +21,31 @@ const fetchReports = async () => {
 };
 
 export function LiveReportsFeed() {
+  const queryClient = useQueryClient();
   const { data: reports = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: ["reports"],
     queryFn: fetchReports,
-    refetchInterval: 10000, // Refetch every 10 seconds for "real-time" feel
+    refetchInterval: 5000, // Still keep polling as fallback
   });
+
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_API_URL);
+    
+    socket.on("connect", () => {
+      console.log("Connected to Real-time Feed");
+    });
+
+    socket.on("new-report", (newReport) => {
+      console.log("Real-time report received!", newReport);
+      // Invalidate both feed and map queries
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["reports:geojson"] });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [queryClient]);
 
   return (
     <GlassCard className="p-5">
@@ -32,16 +54,24 @@ export function LiveReportsFeed() {
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Live reports</p>
           <p className="mt-1 text-sm text-foreground/80">Last updates</p>
         </div>
-        <button 
-          onClick={() => refetch()}
-          className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition"
-        >
-          <span className="relative flex h-1.5 w-1.5">
-            <span className={cn("absolute inline-flex h-full w-full rounded-full bg-teal opacity-70", !isFetching && "animate-ping")} />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal" />
-          </span>
-          {isFetching ? "Updating..." : "Live"}
-        </button>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => refetch()}
+            className="flex h-8 w-8 items-center justify-center rounded-full glass text-muted-foreground hover:text-teal hover:bg-white/5 transition active:scale-95"
+            title="Manual Refresh"
+          >
+            <RotateCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} strokeWidth={2} />
+          </button>
+          
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className={cn("absolute inline-flex h-full w-full rounded-full bg-teal opacity-70", !isFetching && "animate-ping")} />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal" />
+            </span>
+            {isFetching ? "Syncing" : "Live"}
+          </div>
+        </div>
       </div>
 
       {isLoading && reports.length === 0 ? (

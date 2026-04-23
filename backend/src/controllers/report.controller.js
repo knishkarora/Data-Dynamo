@@ -58,6 +58,13 @@ exports.createReport = async (req, res) => {
 
     await report.save();
 
+    // 4.1 Broadcast via Socket.io
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new-report', report);
+      console.log('Broadcasted new-report event');
+    }
+
     // 5. Store in Pinecone
     await pineconeService.upsertEmbedding(report.embedding_id, embedding, {
       report_id: report._id.toString(),

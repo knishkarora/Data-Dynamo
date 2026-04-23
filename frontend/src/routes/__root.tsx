@@ -1,7 +1,16 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-
+import { ClerkProvider } from "@clerk/clerk-react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import appCss from "../styles.css?url";
 import { LenisProvider } from "@/components/eco/LenisProvider";
+
+const queryClient = new QueryClient();
+
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+if (!PUBLISHABLE_KEY) {
+  throw new Error("Missing Publishable Key");
+}
 
 function NotFoundComponent() {
   return (
@@ -73,8 +82,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <LenisProvider>
-      <Outlet />
-    </LenisProvider>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+      <QueryClientProvider client={queryClient}>
+        <LenisProvider>
+          <Outlet />
+        </LenisProvider>
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }
+
+

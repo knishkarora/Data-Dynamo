@@ -1,6 +1,6 @@
-| MongoDB     → users, chats    |
-| Pinecone    → AI embeddings   |
-| Redis       → caching (fast)  |
+MongoDB → users, chats    |
+Pinecone → AI embeddings   |
+Redis → caching (fast)  |
 groq for chatbot and report sending 
 clerk for authentication 
 backend in python 

@@ -13,6 +13,7 @@ const waterRoutes = require('./routes/water.routes');
 
 const http = require('http');
 const { Server } = require('socket.io');
+const startSyncJob = require('./jobs/dataSync');
 
 const app = express();
 const server = http.createServer(app);
@@ -29,6 +30,9 @@ app.set('io', io);
 
 // Connect to Database
 connectDB();
+
+// Start Background Jobs
+startSyncJob();
 
 // Verify Environment Variables
 logger.info(`Clerk Publishable Key: ${process.env.CLERK_PUBLISHABLE_KEY ? 'Loaded' : 'MISSING'}`);

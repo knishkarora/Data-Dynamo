@@ -34,6 +34,10 @@ export function LiveReportsFeed() {
     socket.on("connect", () => {
       console.log("Connected to Real-time Feed");
     });
+    
+    socket.on("connect_error", (err) => {
+      console.error("Real-time Feed Connection Error:", err);
+    });
 
     socket.on("new-report", (newReport) => {
       console.log("Real-time report received!", newReport);

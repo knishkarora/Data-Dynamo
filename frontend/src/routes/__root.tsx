@@ -4,7 +4,32 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import appCss from "../styles.css?url";
 import { LenisProvider } from "@/components/eco/LenisProvider";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+    },
+    mutations: {
+      onError: (error) => {
+        console.error("Global Mutation Error:", error);
+      }
+    }
+  }
+});
+
+// Global error listeners to ensure nothing is swallowed
+if (typeof window !== 'undefined') {
+  window.onerror = function(message, source, lineno, colno, error) {
+    console.error("Global Window Error:", { message, source, lineno, colno, error });
+    return false;
+  };
+
+  window.onunhandledrejection = function(event) {
+    console.error("Unhandled Promise Rejection:", event.reason);
+  };
+
+  console.info("🛡️ Climx Debug Mode: Global error listeners active.");
+}
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 

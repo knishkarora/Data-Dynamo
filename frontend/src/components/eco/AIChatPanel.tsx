@@ -51,7 +51,8 @@ export function AIChatPanel() {
     onSuccess: (data) => {
       setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("AI Chat Error:", error);
       setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble connecting right now. Please try again later." }]);
     }
   });

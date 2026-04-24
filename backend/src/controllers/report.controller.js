@@ -117,18 +117,71 @@ exports.createReport = async (req, res) => {
 };
 
 /**
+ * Helper to enrich reports with real-time data from Redis using a pipeline for performance
+ */
+const enrichReportsWithRedis = async (reports, userId) => {
+  if (!reports || reports.length === 0) return [];
+
+  try {
+    const pipeline = redis.pipeline();
+    
+    reports.forEach(report => {
+      const reportId = report._id.toString();
+      pipeline.smembers(`votes:${reportId}:up`);
+      pipeline.smembers(`votes:${reportId}:down`);
+      pipeline.lrange(`comments:${reportId}`, 0, -1);
+    });
+
+    const results = await pipeline.exec();
+    
+    return reports.map((report, index) => {
+      // @upstash/redis pipeline.exec() returns results directly in an array
+      const offset = index * 3;
+      const redisUpvotes = results[offset] || [];
+      const redisDownvotes = results[offset + 1] || [];
+      const redisComments = results[offset + 2] || [];
+
+      // Convert Redis comments (JSON strings) to objects, with safety check
+      const parsedRedisComments = redisComments.map(c => {
+        try {
+          return typeof c === 'string' ? JSON.parse(c) : c;
+        } catch (e) {
+          logger.warn(`Failed to parse comment from Redis: ${c}`);
+          return null;
+        }
+      }).filter(c => c !== null);
+
+      const dbReport = report.toObject ? report.toObject() : report;
+      const dbUpvotes = Array.isArray(dbReport.upvotes) ? dbReport.upvotes : [];
+      const dbDownvotes = Array.isArray(dbReport.downvotes) ? dbReport.downvotes : [];
+      const dbComments = Array.isArray(dbReport.comments) ? dbReport.comments : [];
+
+      // Use Redis data if it exists, otherwise fallback to DB
+      const finalUpvotes = redisUpvotes.length > 0 ? redisUpvotes : dbUpvotes;
+      const finalDownvotes = redisDownvotes.length > 0 ? redisDownvotes : dbDownvotes;
+      const finalComments = [...dbComments, ...parsedRedisComments];
+
+      return {
+        ...dbReport,
+        upvotes: finalUpvotes,
+        downvotes: finalDownvotes,
+        comments: finalComments
+      };
+    });
+  } catch (error) {
+    logger.error(`Redis Enrichment Error: ${error.message}`, { stack: error.stack });
+    // Fallback: return original reports if Redis fails
+    return reports.map(r => r.toObject ? r.toObject() : r);
+  }
+};
+
+/**
  * Get all reports with pagination and filtering
  */
 exports.getReports = async (req, res) => {
   try {
     const { page = 1, limit = 10, category } = req.query;
-    const cacheKey = `reports:${category || 'all'}:p${page}:l${limit}`;
-
-    // Check Cache
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-      return res.json(typeof cachedData === 'string' ? JSON.parse(cachedData) : cachedData);
-    }
+    const userId = req.auth?.userId;
 
     const query = category ? { category } : {};
     const reports = await Report.find(query)
@@ -139,14 +192,14 @@ exports.getReports = async (req, res) => {
 
     const count = await Report.countDocuments(query);
 
+    // Enrich with Redis data
+    const enrichedReports = await enrichReportsWithRedis(reports, userId);
+
     const response = {
-      reports,
+      reports: enrichedReports,
       totalPages: Math.ceil(count / limit),
       currentPage: page
     };
-
-    // Store in Cache (Expires in 5 mins)
-    await redis.set(cacheKey, JSON.stringify(response), { ex: 300 });
 
     res.json(response);
   } catch (error) {
@@ -160,12 +213,6 @@ exports.getReports = async (req, res) => {
  */
 exports.getMapReports = async (req, res) => {
   try {
-    const cacheKey = 'reports:geojson';
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-      return res.json(typeof cachedData === 'string' ? JSON.parse(cachedData) : cachedData);
-    }
-
     const reports = await Report.find();
     
     const geoJSON = {
@@ -185,8 +232,6 @@ exports.getMapReports = async (req, res) => {
         }
       }))
     };
-
-    await redis.set(cacheKey, JSON.stringify(geoJSON), { ex: 600 }); // Cache for 10 mins
 
     res.json(geoJSON);
   } catch (error) {
@@ -314,93 +359,117 @@ exports.getMyReports = async (req, res) => {
   try {
     const userId = req.auth.userId;
     const reports = await Report.find({ user_id: userId }).sort({ created_at: -1 });
-    res.json(reports);
+    const enriched = await enrichReportsWithRedis(reports, userId);
+    res.json(enriched);
   } catch (error) {
     logger.error(`Get My Reports Error: ${error.message}`);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 /**
- * Vote on a report (Up or Down)
+ * Vote on a report (Up or Down) - REDIS FIRST
  */
 exports.voteReport = async (req, res) => {
   try {
     const userId = req.auth.userId;
-    const { direction } = req.body; // 'up' or 'down'
-    const report = await Report.findById(req.params.id);
+    const { direction } = req.body;
+    const reportId = req.params.id;
+
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     
-    if (!report) {
-      return res.status(404).json({ error: 'Report not found' });
+    const upKey = `votes:${reportId}:up`;
+    const downKey = `votes:${reportId}:down`;
+
+    // 1. Get current Redis state if it exists, otherwise initialize from DB
+    let hasUpvoted = await redis.sismember(upKey, userId);
+    let hasDownvoted = await redis.sismember(downKey, userId);
+
+    // If Redis doesn't have the member, it *might* be in DB. 
+    // But for a fast social feed, we can assume that if it's not in Redis, 
+    // we should check DB once OR just sync DB -> Redis on first interaction.
+    // To keep it simple and ultra-fast, we'll sync DB to Redis if Redis keys don't exist.
+    const redisExists = await redis.exists(upKey) || await redis.exists(downKey);
+    
+    if (!redisExists) {
+      const report = await Report.findById(reportId).select('upvotes downvotes').lean();
+      if (report) {
+        if (report.upvotes?.length) await redis.sadd(upKey, ...report.upvotes.map(id => id.toString()));
+        if (report.downvotes?.length) await redis.sadd(downKey, ...report.downvotes.map(id => id.toString()));
+        hasUpvoted = report.upvotes?.map(id => id.toString()).includes(userId);
+        hasDownvoted = report.downvotes?.map(id => id.toString()).includes(userId);
+      }
     }
 
-    if (!report.upvotes) report.upvotes = [];
-    if (!report.downvotes) report.downvotes = [];
-
-    const upIndex = report.upvotes.indexOf(userId);
-    const downIndex = report.downvotes.indexOf(userId);
-
+    // 2. Perform Toggle Logic in Redis
     if (direction === 'up') {
-      if (upIndex > -1) {
-        report.upvotes.splice(upIndex, 1);
+      if (hasUpvoted) {
+        await redis.srem(upKey, userId);
       } else {
-        report.upvotes.push(userId);
-        if (downIndex > -1) report.downvotes.splice(downIndex, 1);
+        await redis.sadd(upKey, userId);
+        await redis.srem(downKey, userId);
       }
-    } else if (direction === 'down') {
-      if (downIndex > -1) {
-        report.downvotes.splice(downIndex, 1);
+    } else {
+      if (hasDownvoted) {
+        await redis.srem(downKey, userId);
       } else {
-        report.downvotes.push(userId);
-        if (upIndex > -1) report.upvotes.splice(upIndex, 1);
+        await redis.sadd(downKey, userId);
+        await redis.srem(upKey, userId);
       }
     }
 
-    await report.save();
-    res.json({ 
-      upvotes: report.upvotes.length, 
-      downvotes: report.downvotes.length,
-      score: report.upvotes.length - report.downvotes.length,
-      userVote: report.upvotes.includes(userId) ? 'up' : report.downvotes.includes(userId) ? 'down' : null
+    // 3. Mark for sync
+    await redis.sadd('pending_sync:reports', reportId);
+
+    // 4. Return new state immediately
+    const [finalUp, finalDown] = await Promise.all([
+      redis.smembers(upKey),
+      redis.smembers(downKey)
+    ]);
+
+    res.json({
+      upvotes: finalUp.length,
+      downvotes: finalDown.length,
+      score: finalUp.length - finalDown.length,
+      userVote: finalUp.includes(userId) ? 'up' : finalDown.includes(userId) ? 'down' : null
     });
   } catch (error) {
-    logger.error(`Vote Error: ${error.message}`);
+    logger.error(`Vote Error (Redis): ${error.message}`);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
 /**
- * Add an anonymous comment to a report
+ * Add an anonymous comment - REDIS FIRST
  */
 exports.addComment = async (req, res) => {
   try {
     const { text } = req.body;
-    if (!text) {
-      return res.status(400).json({ error: 'Comment text is required' });
+    const reportId = req.params.id;
+
+    if (!text || text.trim().length === 0) {
+      return res.status(400).json({ error: 'Comment text cannot be empty' });
     }
 
-    const report = await Report.findById(req.params.id);
-    if (!report) {
-      return res.status(404).json({ error: 'Report not found' });
-    }
-
-    // Initialize if missing
-    if (!report.comments) report.comments = [];
-
-    // Generate a fun anonymous name
-    const adjectives = ['Brave', 'Quiet', 'Alert', 'Watchful', 'Eco', 'Green', 'Active'];
-    const animals = ['Leopard', 'Eagle', 'Owl', 'Tiger', 'Wolf', 'Deer', 'Falcon'];
+    // Generate anon name
+    const adjectives = ['Brave', 'Quiet', 'Alert', 'Watchful', 'Eco', 'Green', 'Active', 'Swift', 'Bright'];
+    const animals = ['Leopard', 'Eagle', 'Owl', 'Tiger', 'Wolf', 'Deer', 'Falcon', 'Panda', 'Lion'];
     const anonName = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${animals[Math.floor(Math.random() * animals.length)]}`;
 
-    report.comments.push({
-      text,
+    const newComment = {
+      text: text.trim(),
       anonymous_name: anonName,
       created_at: new Date()
-    });
+    };
 
-    await report.save();
-    res.status(201).json(report.comments[report.comments.length - 1]);
+    // Store in Redis List
+    await redis.rpush(`comments:${reportId}`, JSON.stringify(newComment));
+    
+    // Mark for sync
+    await redis.sadd('pending_sync:reports', reportId);
+
+    res.status(201).json(newComment);
   } catch (error) {
-    logger.error(`Comment Error: ${error.message}`);
+    logger.error(`Comment Error (Redis): ${error.message}`);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -414,7 +483,8 @@ exports.getReportById = async (req, res) => {
     if (!report) {
       return res.status(404).json({ error: 'Report not found' });
     }
-    res.json(report);
+    const enriched = await enrichReportsWithRedis([report], req.auth?.userId);
+    res.json(enriched[0]);
   } catch (error) {
     logger.error(`Get Report By ID Error: ${error.message}`);
     res.status(500).json({ error: 'Internal Server Error' });

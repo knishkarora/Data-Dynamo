@@ -4,10 +4,15 @@ import { PageShell } from "@/components/eco/PageShell";
 import { GlassCard } from "@/components/eco/GlassCard";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ProtectedRoute } from "@/components/eco/ProtectedRoute";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — EcoLens" }, { name: "description", content: "EcoLens preferences and notifications." }] }),
-  component: SettingsPage,
+  component: () => (
+    <ProtectedRoute>
+      <SettingsPage />
+    </ProtectedRoute>
+  ),
 });
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {

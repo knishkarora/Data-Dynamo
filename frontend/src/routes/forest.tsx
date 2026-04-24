@@ -2,10 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Trees } from "lucide-react";
 import { PageShell } from "@/components/eco/PageShell";
 import { GlassCard } from "@/components/eco/GlassCard";
+import { ProtectedRoute } from "@/components/eco/ProtectedRoute";
 
 export const Route = createFileRoute("/forest")({
   head: () => ({ meta: [{ title: "Forest — EcoLens" }, { name: "description", content: "Forest cover and deforestation tracking across Punjab districts." }] }),
-  component: ForestPage,
+  component: () => (
+    <ProtectedRoute>
+      <ForestPage />
+    </ProtectedRoute>
+  ),
 });
 
 const districts = [

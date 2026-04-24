@@ -37,7 +37,11 @@ export const Route = createFileRoute("/analytics")({
       { name: "description", content: "Historical trends across air, fires, and reports." },
     ],
   }),
-  component: AnalyticsPage,
+  component: () => (
+    <ProtectedRoute>
+      <AnalyticsPage />
+    </ProtectedRoute>
+  ),
 });
 
 function AnalyticsPage() {

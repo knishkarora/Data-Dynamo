@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 
 const items = [
-  { icon: Home, label: "Overview", to: "/" },
+  { icon: Home, label: "Overview", to: "/dashboard" },
   { icon: FileText, label: "Reports", to: "/reports" },
   { icon: Activity, label: "Real-time Feed", to: "/feed" },
   { icon: Users, label: "Community", to: "/community" },

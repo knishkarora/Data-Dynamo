@@ -3,6 +3,7 @@ import { Users, Award, MessageCircle, Heart } from "lucide-react";
 import { PageShell } from "@/components/eco/PageShell";
 import { GlassCard } from "@/components/eco/GlassCard";
 import { motion } from "framer-motion";
+import { ProtectedRoute } from "@/components/eco/ProtectedRoute";
 
 export const Route = createFileRoute("/community")({
   head: () => ({
@@ -11,7 +12,11 @@ export const Route = createFileRoute("/community")({
       { name: "description", content: "Top contributors and active citizens reporting environmental issues." },
     ],
   }),
-  component: CommunityPage,
+  component: () => (
+    <ProtectedRoute>
+      <CommunityPage />
+    </ProtectedRoute>
+  ),
 });
 
 const leaders = [

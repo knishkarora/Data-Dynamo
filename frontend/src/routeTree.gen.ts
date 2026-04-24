@@ -16,6 +16,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as ForestRouteImport } from './routes/forest'
 import { Route as FeedRouteImport } from './routes/feed'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
@@ -55,6 +56,11 @@ const FeedRoute = FeedRouteImport.update({
   path: '/feed',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CommunityRoute = CommunityRouteImport.update({
   id: '/community',
   path: '/community',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/community': typeof CommunityRoute
+  '/dashboard': typeof DashboardRoute
   '/feed': typeof FeedRoute
   '/forest': typeof ForestRoute
   '/map': typeof MapRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/community': typeof CommunityRoute
+  '/dashboard': typeof DashboardRoute
   '/feed': typeof FeedRoute
   '/forest': typeof ForestRoute
   '/map': typeof MapRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/community': typeof CommunityRoute
+  '/dashboard': typeof DashboardRoute
   '/feed': typeof FeedRoute
   '/forest': typeof ForestRoute
   '/map': typeof MapRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/community'
+    | '/dashboard'
     | '/feed'
     | '/forest'
     | '/map'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/community'
+    | '/dashboard'
     | '/feed'
     | '/forest'
     | '/map'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/community'
+    | '/dashboard'
     | '/feed'
     | '/forest'
     | '/map'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
   CommunityRoute: typeof CommunityRoute
+  DashboardRoute: typeof DashboardRoute
   FeedRoute: typeof FeedRoute
   ForestRoute: typeof ForestRoute
   MapRoute: typeof MapRoute
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/community': {
       id: '/community'
       path: '/community'
@@ -239,6 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
   CommunityRoute: CommunityRoute,
+  DashboardRoute: DashboardRoute,
   FeedRoute: FeedRoute,
   ForestRoute: ForestRoute,
   MapRoute: MapRoute,

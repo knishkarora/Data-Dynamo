@@ -3,10 +3,15 @@ import { Droplet, Waves } from "lucide-react";
 import { PageShell } from "@/components/eco/PageShell";
 import { GlassCard } from "@/components/eco/GlassCard";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
+import { ProtectedRoute } from "@/components/eco/ProtectedRoute";
 
 export const Route = createFileRoute("/water")({
   head: () => ({ meta: [{ title: "Water — EcoLens" }, { name: "description", content: "Water quality monitoring across rivers and reservoirs." }] }),
-  component: WaterPage,
+  component: () => (
+    <ProtectedRoute>
+      <WaterPage />
+    </ProtectedRoute>
+  ),
 });
 
 const sources = [

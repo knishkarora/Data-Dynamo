@@ -4,6 +4,7 @@ import { PageShell } from "@/components/eco/PageShell";
 import { MapCard } from "@/components/eco/MapCard";
 import { GlassCard } from "@/components/eco/GlassCard";
 import { mapMarkers } from "@/lib/mock-data";
+import { ProtectedRoute } from "@/components/eco/ProtectedRoute";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
@@ -12,7 +13,11 @@ export const Route = createFileRoute("/map")({
       { name: "description", content: "Live environmental map of Punjab with AQI, fires, and reports." },
     ],
   }),
-  component: MapPage,
+  component: () => (
+    <ProtectedRoute>
+      <MapPage />
+    </ProtectedRoute>
+  ),
 });
 
 function MapPage() {

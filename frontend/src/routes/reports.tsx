@@ -8,6 +8,8 @@ import { aqiAvgSpark, firesSpark, reportsSpark } from "@/lib/mock-data";
 import { Flame, Wind, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
+import { ProtectedRoute } from "@/components/eco/ProtectedRoute";
+
 export const Route = createFileRoute("/reports")({
   head: () => ({
     meta: [
@@ -15,7 +17,11 @@ export const Route = createFileRoute("/reports")({
       { name: "description", content: "Live citizen reports of environmental issues across India." },
     ],
   }),
-  component: ReportsPage,
+  component: () => (
+    <ProtectedRoute>
+      <ReportsPage />
+    </ProtectedRoute>
+  ),
 });
 
 function ReportsPage() {

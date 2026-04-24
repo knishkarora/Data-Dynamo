@@ -4,10 +4,14 @@ import { PageShell } from "@/components/eco/PageShell";
 import { GlassCard } from "@/components/eco/GlassCard";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
+import { ProtectedRoute } from "@/components/eco/ProtectedRoute";
 
 export const Route = createFileRoute("/profile")({
-  head: () => ({ meta: [{ title: "Profile — EcoLens" }, { name: "description", content: "Your EcoLens contributor profile." }] }),
-  component: ProfilePage,
+  component: () => (
+    <ProtectedRoute>
+      <ProfilePage />
+    </ProtectedRoute>
+  ),
 });
 
 function ProfilePage() {

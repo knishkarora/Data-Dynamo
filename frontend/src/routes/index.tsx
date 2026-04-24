@@ -2,28 +2,40 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 import { ArrowRight, Globe, Shield, Zap } from "lucide-react";
+import { useState } from "react";
+import { LoadingScreen } from "@/components/eco/LoadingScreen";
+import { InteractiveMesh } from "@/components/eco/InteractiveMesh";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
 });
-
 function LandingPage() {
+  const [showLoader, setShowLoader] = useState(true);
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      {/* Background Elements */}
+    <>
+      {showLoader && <LoadingScreen onComplete={() => setShowLoader(false)} />}
+    <div className="relative min-h-screen overflow-hidden bg-[#050505] text-foreground selection:bg-teal/30">
+      {/* Interactive Canvas Mesh */}
+      <InteractiveMesh />
+
+      {/* Ambient glow blobs */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div 
-          className="absolute -top-[10%] -left-[10%] h-[50%] w-[50%] rounded-full opacity-20 blur-[120px]"
-          style={{ background: 'radial-gradient(circle, var(--teal) 0%, transparent 70%)' }}
+          className="absolute -top-[10%] -left-[10%] h-[50%] w-[50%] rounded-full opacity-15 blur-[120px]"
+          style={{ background: 'radial-gradient(circle, rgba(45, 212, 191, 0.6) 0%, transparent 70%)' }}
         />
         <div 
-          className="absolute -bottom-[10%] -right-[10%] h-[50%] w-[50%] rounded-full opacity-20 blur-[120px]"
-          style={{ background: 'radial-gradient(circle, var(--blueaccent) 0%, transparent 70%)' }}
+          className="absolute -bottom-[10%] -right-[10%] h-[50%] w-[50%] rounded-full opacity-15 blur-[120px]"
+          style={{ background: 'radial-gradient(circle, rgba(96, 165, 250, 0.6) 0%, transparent 70%)' }}
         />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.02] mix-blend-overlay" />
+        <div 
+          className="absolute top-[40%] left-[50%] -translate-x-1/2 h-[30%] w-[30%] rounded-full opacity-10 blur-[100px]"
+          style={{ background: 'radial-gradient(circle, rgba(168, 85, 247, 0.5) 0%, transparent 70%)' }}
+        />
       </div>
 
-      <nav className="fixed top-0 z-50 flex w-full items-center justify-between px-8 py-6 backdrop-blur-sm">
+      <nav className="relative z-50 fixed top-0 flex w-full items-center justify-between px-8 py-6 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="Climx" className="h-8 w-auto" />
         </div>
@@ -52,7 +64,7 @@ function LandingPage() {
         </div>
       </nav>
 
-      <main className="flex min-h-screen flex-col items-center justify-center px-6 pt-20">
+      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 pt-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -63,12 +75,12 @@ function LandingPage() {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-            className="mb-12"
+            className="mb-6"
           >
-            <img src="/logo.png" alt="Climx Logo" className="h-24 w-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]" />
+            <img src="/logo.png" alt="Climx Logo" className="h-48 w-auto drop-shadow-[0_0_50px_rgba(255,255,255,0.3)]" />
           </motion.div>
 
-          <h1 className="max-w-3xl text-5xl font-black tracking-tight sm:text-7xl">
+          <h1 className="max-w-3xl text-4xl font-black tracking-tight sm:text-6xl text-balance">
             Environmental <span className="bg-gradient-to-br from-teal to-blueaccent bg-clip-text text-transparent">Accountability</span> for India
           </h1>
           
@@ -118,7 +130,7 @@ function LandingPage() {
         </motion.div>
       </main>
 
-      <footer className="mt-40 border-t border-white/5 bg-black/20 px-8 py-12 backdrop-blur-md">
+      <footer className="relative z-10 mt-40 border-t border-white/5 bg-black/20 px-8 py-12 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 sm:flex-row">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="Climx" className="h-5 w-auto grayscale opacity-50" />
@@ -132,6 +144,7 @@ function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
 

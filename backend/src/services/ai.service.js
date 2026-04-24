@@ -16,7 +16,13 @@ const summarizeDescription = async (description) => {
       messages: [
         {
           role: 'system',
-          content: 'You are a civic engagement assistant. Summarize the following issue report into a concise, professional title and a 1-sentence summary.'
+          content: `You are a civic engagement assistant. Summarize the following issue report into a concise, professional title and a 1-sentence summary.
+          
+          CRITICAL INSTRUCTIONS:
+          - DO NOT use labels like "Title:", "Summary:", or "**Title:**".
+          - DO NOT start with "A concerned citizen is reporting" or "Urgent:".
+          - Start directly with the title on the first line, followed by the summary on the second line.
+          - Use a direct, active voice (e.g., "Illegal garbage dumping in Sector 32" instead of "A citizen reports...").`
         },
         {
           role: 'user',
@@ -26,7 +32,16 @@ const summarizeDescription = async (description) => {
       model: 'llama-3.3-70b-versatile',
     });
 
-    return chatCompletion.choices[0]?.message?.content || description;
+    let content = chatCompletion.choices[0]?.message?.content || description;
+    
+    // Post-processing to strip common AI prefixes if they still appear
+    content = content.replace(/(\*\*|\*)?Title:(\*\*|\*)?/gi, '')
+                    .replace(/(\*\*|\*)?Summary:(\*\*|\*)?/gi, '')
+                    .replace(/A concerned citizen is reporting/gi, '')
+                    .replace(/Urgent:/gi, '')
+                    .trim();
+
+    return content;
   } catch (error) {
     logger.error(`Groq Summarization Error: ${error.message}`);
     return description;

@@ -7,6 +7,7 @@ import { aqiSparkline, budgetMonthly, firesSpark } from "@/lib/mock-data";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { ProtectedRoute } from "@/components/eco/ProtectedRoute";
 
 const fetchAQI = async (lat: number, lng: number) => {
   const response = await fetch(`${import.meta.env.VITE_API_URL}/api/aqi`, {

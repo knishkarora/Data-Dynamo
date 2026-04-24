@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import {
-  Home, FileText, Users, Map as MapIcon, BarChart3, Droplet, Trees, UserCircle, Settings, Activity,
+  Home, FileText, Users, Map as MapIcon, BarChart3, Droplet, Trees, UserCircle, Settings, Activity, Trophy,
 } from "lucide-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ const items = [
   { icon: FileText, label: "Reports", to: "/reports" },
   { icon: Activity, label: "Real-time Feed", to: "/feed" },
   { icon: Users, label: "Community", to: "/community" },
+  { icon: Trophy, label: "Challenges", to: "/challenges" },
   { icon: MapIcon, label: "Map", to: "/map" },
   { icon: BarChart3, label: "Analytics", to: "/analytics" },
   { icon: Droplet, label: "Water", to: "/water" },
